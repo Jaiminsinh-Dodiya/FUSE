@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "description": "FUSE — a keyboard-first desktop shell for organizing persistent web applications.",
   "private": true,
-  "main": "dist-electron/main/index.js",
+  "main": "out/main/index.js",
   "type": "module",
   "engines": {
     "node": ">=20.0.0"
