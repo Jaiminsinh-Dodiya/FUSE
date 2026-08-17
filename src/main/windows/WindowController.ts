@@ -24,12 +24,9 @@ export class WindowController {
       minWidth: 960,
       minHeight: 600,
       show: false,
-      // Custom title bar per the brief's shell design — no native
-      // OS chrome duplicating FUSE's own sidebar/titlebar.
       titleBarStyle: "hidden",
       webPreferences: {
         preload: join(__dirname, "../preload/index.mjs"),
-        // Non-negotiable security defaults (brief section 17):
         contextIsolation: true,
         nodeIntegration: false,
         sandbox: false,
@@ -41,19 +38,12 @@ export class WindowController {
       win.show();
     });
 
-    // electron-vite sets ELECTRON_RENDERER_URL in dev, pointing at
-    // the Vite dev server (hot reload). In production there is no
-    // dev server — load the built renderer HTML from disk instead.
     if (process.env.ELECTRON_RENDERER_URL) {
       void win.loadURL(process.env.ELECTRON_RENDERER_URL);
     } else {
       void win.loadFile(join(__dirname, "../renderer/index.html"));
     }
 
-    // Any attempt to open a new window from the shell's own renderer
-    // (not an embedded application view — that's SecurityPolicy's
-    // job once WebContentsViews exist) is redirected to the system
-    // browser rather than creating a second Electron window.
     win.webContents.setWindowOpenHandler(({ url }) => {
       void shell.openExternal(url);
       return { action: "deny" };
@@ -69,5 +59,23 @@ export class WindowController {
 
   get(): BrowserWindow | null {
     return this.window;
+  }
+
+  attachApplicationView(view: import("electron").WebContentsView): void {
+    if (!this.window) {
+      throw new Error("WindowController: cannot attach a view before create()");
+    }
+    this.window.contentView.addChildView(view);
+    const bounds = this.window.getContentBounds();
+    view.setBounds({
+      x: 0,
+      y: 40,
+      width: bounds.width,
+      height: bounds.height - 40,
+    });
+    this.window.on("resize", () => {
+      const b = this.window!.getContentBounds();
+      view.setBounds({ x: 0, y: 40, width: b.width, height: b.height - 40 });
+    });
   }
 }
