@@ -1,5 +1,6 @@
 import { Titlebar } from "./components/Titlebar";
 import { Sidebar } from "./components/Sidebar";
+import { RecoveryOverlay } from "./components/RecoveryOverlay";
 
 export function App() {
   // The GitHub WebContentsView renders natively on top of this
@@ -11,6 +12,9 @@ export function App() {
       <Titlebar />
       <div style={{ display: "flex", height: "calc(100vh - 40px)" }}>
         <Sidebar />
+        <div style={{ flex: 1, position: "relative" }}>
+          <RecoveryOverlay appId="github" />
+        </div>
       </div>
     </div>
   );

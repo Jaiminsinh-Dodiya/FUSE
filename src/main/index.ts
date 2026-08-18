@@ -4,9 +4,11 @@ import { SessionManager } from "./session/SessionManager";
 import { SecurityPolicy } from "./security/SecurityPolicy";
 import { ConsoleDiagnostics } from "./security/ConsoleDiagnostics";
 import { attachNavigationPolicy } from "./security/attachNavigationPolicy";
-import { githubAppDefinition, githubSecurityConfig } from "./applications/github";
 import { attachDevToolsPolicy } from "./windows/attachDevToolsPolicy";
+import { attachLifecyclePolicy } from "./applications/attachLifecyclePolicy";
+import { AppRegistry } from "./applications/AppRegistry";
 import { registerWindowControlsIpc } from "./windows/windowControlsIpc";
+import { githubAppDefinition, githubSecurityConfig } from "./applications/github";
 
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
@@ -15,6 +17,7 @@ if (!gotLock) {
 
 const windowController = new WindowController();
 const sessionManager = new SessionManager();
+const appRegistry = new AppRegistry();
 
 const securityPolicy = new SecurityPolicy(
   new Map([["github", githubSecurityConfig]]),
@@ -22,6 +25,9 @@ const securityPolicy = new SecurityPolicy(
 );
 
 function launchGithub(): void {
+  if (!appRegistry.get("github")) {
+    appRegistry.register(githubAppDefinition);
+  }
   const appSession = sessionManager.getOrCreate("github", githubSecurityConfig);
 
   const view = new WebContentsView({
@@ -34,8 +40,10 @@ function launchGithub(): void {
   });
 
   windowController.attachApplicationView(view);
+  attachNavigationPolicy(view, "github", securityPolicy);
   attachDevToolsPolicy(view);
-  void view.webContents.loadURL(githubAppDefinition.url);
+attachLifecyclePolicy(view, "github", githubAppDefinition.url, appRegistry, windowController.get()!);  void view.webContents.loadURL(githubAppDefinition.url);
+
 }
 
 app.whenReady().then(() => {
