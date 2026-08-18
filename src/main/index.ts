@@ -1,6 +1,9 @@
 import { app, BrowserWindow, WebContentsView } from "electron";
 import { WindowController } from "./windows/WindowController";
 import { SessionManager } from "./session/SessionManager";
+import { SecurityPolicy } from "./security/SecurityPolicy";
+import { ConsoleDiagnostics } from "./security/ConsoleDiagnostics";
+import { attachNavigationPolicy } from "./security/attachNavigationPolicy";
 import { githubAppDefinition, githubSecurityConfig } from "./applications/github";
 
 const gotLock = app.requestSingleInstanceLock();
@@ -10,6 +13,11 @@ if (!gotLock) {
 
 const windowController = new WindowController();
 const sessionManager = new SessionManager();
+
+const securityPolicy = new SecurityPolicy(
+  new Map([["github", githubSecurityConfig]]),
+  new ConsoleDiagnostics(),
+);
 
 function launchGithub(): void {
   const appSession = sessionManager.getOrCreate("github", githubSecurityConfig);
@@ -24,6 +32,7 @@ function launchGithub(): void {
   });
 
   windowController.attachApplicationView(view);
+  attachNavigationPolicy(view, "github", securityPolicy);
   void view.webContents.loadURL(githubAppDefinition.url);
 }
 
