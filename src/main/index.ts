@@ -6,6 +6,7 @@ import { ConsoleDiagnostics } from "./security/ConsoleDiagnostics";
 import { attachNavigationPolicy } from "./security/attachNavigationPolicy";
 import { githubAppDefinition, githubSecurityConfig } from "./applications/github";
 import { attachDevToolsPolicy } from "./windows/attachDevToolsPolicy";
+import { registerWindowControlsIpc } from "./windows/windowControlsIpc";
 
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
@@ -38,6 +39,7 @@ function launchGithub(): void {
 }
 
 app.whenReady().then(() => {
+  registerWindowControlsIpc();
   windowController.create();
   launchGithub();
 

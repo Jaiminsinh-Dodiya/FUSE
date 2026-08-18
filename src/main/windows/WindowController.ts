@@ -1,6 +1,8 @@
 import { BrowserWindow, shell } from "electron";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { TITLEBAR_HEIGHT } from "./chromeLayout";
+
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
@@ -24,7 +26,7 @@ export class WindowController {
       minWidth: 960,
       minHeight: 600,
       show: false,
-      titleBarStyle: "hidden",
+      frame: false,
       webPreferences: {
         preload: join(__dirname, "../preload/index.mjs"),
         contextIsolation: true,
@@ -69,13 +71,13 @@ export class WindowController {
     const bounds = this.window.getContentBounds();
     view.setBounds({
       x: 0,
-      y: 40,
+      y: TITLEBAR_HEIGHT,
       width: bounds.width,
-      height: bounds.height - 40,
+      height: bounds.height - TITLEBAR_HEIGHT,
     });
     this.window.on("resize", () => {
       const b = this.window!.getContentBounds();
-      view.setBounds({ x: 0, y: 40, width: b.width, height: b.height - 40 });
+      view.setBounds({ x: 0, y: TITLEBAR_HEIGHT, width: b.width, height: b.height - TITLEBAR_HEIGHT });
     });
   }
 }
