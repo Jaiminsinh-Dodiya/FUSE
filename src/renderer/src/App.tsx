@@ -1,4 +1,5 @@
 import { Titlebar } from "./components/Titlebar";
+import { Sidebar } from "./components/Sidebar";
 
 export function App() {
   // The GitHub WebContentsView renders natively on top of this
@@ -8,6 +9,9 @@ export function App() {
   return (
     <div style={{ height: "100vh", background: "#111318" }}>
       <Titlebar />
+      <div style={{ display: "flex", height: "calc(100vh - 40px)" }}>
+        <Sidebar />
+      </div>
     </div>
   );
 }

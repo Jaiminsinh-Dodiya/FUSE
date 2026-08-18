@@ -1,8 +1,8 @@
 import { BrowserWindow, shell } from "electron";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { TITLEBAR_HEIGHT } from "./chromeLayout";
-
+import { TITLEBAR_HEIGHT, SIDEBAR_WIDTH } from "./chromeLayout";
+import { registerWindowControlsIpc } from "./windowControlsIpc";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
@@ -70,14 +70,14 @@ export class WindowController {
     this.window.contentView.addChildView(view);
     const bounds = this.window.getContentBounds();
     view.setBounds({
-      x: 0,
+      x: SIDEBAR_WIDTH,
       y: TITLEBAR_HEIGHT,
-      width: bounds.width,
+      width: bounds.width - SIDEBAR_WIDTH,
       height: bounds.height - TITLEBAR_HEIGHT,
     });
     this.window.on("resize", () => {
       const b = this.window!.getContentBounds();
-      view.setBounds({ x: 0, y: TITLEBAR_HEIGHT, width: b.width, height: b.height - TITLEBAR_HEIGHT });
+      view.setBounds({ x: SIDEBAR_WIDTH, y: TITLEBAR_HEIGHT, width: b.width - SIDEBAR_WIDTH, height: b.height - TITLEBAR_HEIGHT });
     });
   }
 }
