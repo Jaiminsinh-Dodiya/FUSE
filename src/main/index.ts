@@ -5,6 +5,7 @@ import { SecurityPolicy } from "./security/SecurityPolicy";
 import { ConsoleDiagnostics } from "./security/ConsoleDiagnostics";
 import { attachNavigationPolicy } from "./security/attachNavigationPolicy";
 import { githubAppDefinition, githubSecurityConfig } from "./applications/github";
+import { attachDevToolsPolicy } from "./windows/attachDevToolsPolicy";
 
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
@@ -32,7 +33,7 @@ function launchGithub(): void {
   });
 
   windowController.attachApplicationView(view);
-  attachNavigationPolicy(view, "github", securityPolicy);
+  attachDevToolsPolicy(view);
   void view.webContents.loadURL(githubAppDefinition.url);
 }
 
