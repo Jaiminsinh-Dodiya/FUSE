@@ -6,6 +6,7 @@ const reloadHandlersRegistered = new Set<string>();
 
 export interface LifecycleHandle {
   reload: () => void;
+  setOverlayVisible: (open: boolean) => void;
 }
 
 /**
@@ -16,9 +17,11 @@ export interface LifecycleHandle {
  *
  * Important: a WebContentsView paints ABOVE the shell window's own
  * renderer content — it is a separate Electron layer, not part of
- * the DOM. So when an app fails, we must explicitly hide the view
- * (setVisible(false)) or the renderer's recovery UI underneath it
- * will never be seen, even though it's correctly rendered.
+ * the DOM. So whenever the app should be hidden — a failure state,
+ * or a shell overlay like the diagnostics panel or command palette
+ * being open — we must explicitly hide the view (setVisible(false)),
+ * or whatever the renderer draws underneath it will never be seen,
+ * even though it's correctly rendered.
  */
 export function attachLifecyclePolicy(
   view: WebContentsView,
@@ -28,6 +31,12 @@ export function attachLifecyclePolicy(
   shellWindow: BrowserWindow,
 ): LifecycleHandle {
   const { webContents } = view;
+  let isFailureState = false;
+  let overlayOpen = false;
+
+  function applyVisibility(): void {
+    view.setVisible(!isFailureState && !overlayOpen);
+  }
 
   function setState(state: AppLifecycleState): void {
     try {
@@ -37,10 +46,15 @@ export function attachLifecyclePolicy(
       return;
     }
 
-    const isFailureState = state === "FAILED" || state === "CRASHED" || state === "UNRESPONSIVE";
-    view.setVisible(!isFailureState);
+    isFailureState = state === "FAILED" || state === "CRASHED" || state === "UNRESPONSIVE";
+    applyVisibility();
 
     shellWindow.webContents.send("app:stateChanged", { appId, state });
+  }
+
+  function setOverlayVisible(open: boolean): void {
+    overlayOpen = open;
+    applyVisibility();
   }
 
   function reload(): void {
@@ -106,5 +120,5 @@ export function attachLifecyclePolicy(
     });
   }
 
-  return { reload };
+  return { reload, setOverlayVisible };
 }

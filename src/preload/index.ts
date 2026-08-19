@@ -24,6 +24,7 @@ const fuseApi = {
       ipcRenderer.on("app:stateChanged", listener);
       return () => ipcRenderer.removeListener("app:stateChanged", listener);
     },
+    setOverlayVisible: (open: boolean) => ipcRenderer.invoke("appview:setOverlayVisible", open),
   },
   diagnostics: {
     get: () => ipcRenderer.invoke("diagnostics:get"),

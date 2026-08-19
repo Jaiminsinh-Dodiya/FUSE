@@ -17,7 +17,7 @@ export function RecoveryOverlay({ appId }: { appId: string }) {
   const [state, setState] = useState<LifecycleState>("LOADING");
 
   useEffect(() => {
-    return window.fuse.applications.onStateChanged((payload) => {
+    return window.fuse.applications.onStateChanged((payload: { appId: string; state: string }) => {
       if (payload.appId === appId) {
         setState(payload.state as LifecycleState);
       }

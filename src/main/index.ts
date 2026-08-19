@@ -6,7 +6,7 @@ import { DiagnosticsCollector } from "./diagnostics/DiagnosticsCollector";
 import { buildSnapshot } from "./diagnostics/buildSnapshot";
 import { attachNavigationPolicy } from "./security/attachNavigationPolicy";
 import { attachDevToolsPolicy } from "./windows/attachDevToolsPolicy";
-import { attachLifecyclePolicy } from "./applications/attachLifecyclePolicy";
+import { attachLifecyclePolicy, type LifecycleHandle } from "./applications/attachLifecyclePolicy";
 import { AppRegistry } from "./applications/AppRegistry";
 import { registerWindowControlsIpc } from "./windows/windowControlsIpc";
 import { CommandRegistry } from "./commands/CommandRegistry";
@@ -24,6 +24,7 @@ const appRegistry = new AppRegistry();
 const diagnosticsCollector = new DiagnosticsCollector();
 const commandRegistry = new CommandRegistry();
 let githubView: WebContentsView | null = null;
+let githubLifecycle: LifecycleHandle | null = null;
 let masterSearchRegistered = false;
 
 const securityPolicy = new SecurityPolicy(
@@ -57,6 +58,7 @@ function launchGithub(): void {
     appRegistry,
     windowController.get()!,
   );
+  githubLifecycle = lifecycle;
   void view.webContents.loadURL(githubAppDefinition.url);
 
   commandRegistry.register({
@@ -83,6 +85,9 @@ ipcMain.handle("diagnostics:get", () => {
 
 ipcMain.handle("commands:list", () => commandRegistry.list());
 ipcMain.handle("commands:execute", (_event, id: string) => commandRegistry.execute(id));
+ipcMain.handle("appview:setOverlayVisible", (_event, open: boolean) => {
+  githubLifecycle?.setOverlayVisible(open);
+});
 
 app.whenReady().then(() => {
   registerWindowControlsIpc();

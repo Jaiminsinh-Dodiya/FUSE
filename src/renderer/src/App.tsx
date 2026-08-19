@@ -15,6 +15,11 @@ export function App() {
     });
   }, []);
 
+  useEffect(() => {
+    void window.fuse.applications.setOverlayVisible(diagnosticsOpen || paletteOpen);
+  }, [diagnosticsOpen, paletteOpen]);
+
+
   // The GitHub WebContentsView renders natively on top of this React
   // tree (a separate Electron layer, not DOM content) — this shell
   // only needs to render its own chrome (titlebar + sidebar) plus any

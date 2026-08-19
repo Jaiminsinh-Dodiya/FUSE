@@ -51,6 +51,26 @@ export class WindowController {
       return { action: "deny" };
     });
 
+    // Same issue as the app view's DevTools: the GitHub WebContentsView
+    // sits on top of the shell's own content at fixed bounds that don't
+    // shrink for a docked DevTools panel, burying it. Force detach here
+    // too, for the same reason.
+    win.webContents.on("before-input-event", (event, input) => {
+      const isDevToolsShortcut =
+        input.type === "keyDown" &&
+        (input.key === "F12" ||
+          (input.control && input.shift && input.key.toUpperCase() === "I"));
+
+      if (!isDevToolsShortcut) return;
+
+      event.preventDefault();
+      if (win.webContents.isDevToolsOpened()) {
+        win.webContents.closeDevTools();
+      } else {
+        win.webContents.openDevTools({ mode: "detach" });
+      }
+    });
+
     win.on("closed", () => {
       this.window = null;
     });
