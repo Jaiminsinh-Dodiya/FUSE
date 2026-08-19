@@ -1,8 +1,10 @@
-import { app, BrowserWindow, WebContentsView } from "electron";
+import { app, BrowserWindow, ipcMain, WebContentsView } from "electron";
+import { IpcMain } from "electron";
 import { WindowController } from "./windows/WindowController";
 import { SessionManager } from "./session/SessionManager";
 import { SecurityPolicy } from "./security/SecurityPolicy";
-import { ConsoleDiagnostics } from "./security/ConsoleDiagnostics";
+import { DiagnosticsCollector } from "./diagnostics/DiagnosticsCollector";
+import { buildSnapshot } from "./diagnostics/buildSnapshot";
 import { attachNavigationPolicy } from "./security/attachNavigationPolicy";
 import { attachDevToolsPolicy } from "./windows/attachDevToolsPolicy";
 import { attachLifecyclePolicy } from "./applications/attachLifecyclePolicy";
@@ -18,10 +20,13 @@ if (!gotLock) {
 const windowController = new WindowController();
 const sessionManager = new SessionManager();
 const appRegistry = new AppRegistry();
+const diagnosticsCollector = new DiagnosticsCollector();
+let githubView: WebContentsView | null = null;
+
 
 const securityPolicy = new SecurityPolicy(
   new Map([["github", githubSecurityConfig]]),
-  new ConsoleDiagnostics(),
+  diagnosticsCollector,
 );
 
 function launchGithub(): void {
@@ -38,13 +43,21 @@ function launchGithub(): void {
       sandbox: true, // no preload runs in an app view, so ESM isn't a concern here
     },
   });
+  githubView = view;
 
   windowController.attachApplicationView(view);
   attachNavigationPolicy(view, "github", securityPolicy);
   attachDevToolsPolicy(view);
-attachLifecyclePolicy(view, "github", githubAppDefinition.url, appRegistry, windowController.get()!);  void view.webContents.loadURL(githubAppDefinition.url);
-
+  attachLifecyclePolicy(view, "github", githubAppDefinition.url, appRegistry, windowController.get()!);
+  void view.webContents.loadURL(githubAppDefinition.url);
 }
+
+ipcMain.handle("diagnostics:get", () => {
+  const shellWindow = windowController.get();
+  if (!shellWindow) return null;
+  return buildSnapshot(shellWindow, githubView, appRegistry, diagnosticsCollector);
+});
+
 
 app.whenReady().then(() => {
   registerWindowControlsIpc();

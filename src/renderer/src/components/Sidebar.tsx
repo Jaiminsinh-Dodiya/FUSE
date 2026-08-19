@@ -4,7 +4,7 @@ import { SIDEBAR_WIDTH } from "../chromeLayout";
 // future-only (brief section 33: "Animated Sidebar — Future Only").
 // One entry for now (GitHub); more appear here as real applications
 // are added, not before.
-export function Sidebar() {
+export function Sidebar({ onToggleDiagnostics }: { onToggleDiagnostics: () => void }) {
   return (
     <div
       style={{
@@ -22,6 +22,11 @@ export function Sidebar() {
       <SidebarIcon label="GitHub" active>
         <GitHubGlyph />
       </SidebarIcon>
+      <div style={{ marginTop: "auto", marginBottom: 12 }}>
+        <SidebarIcon label="Diagnostics" onClick={onToggleDiagnostics}>
+          <DiagnosticGlyph />
+        </SidebarIcon>
+      </div>
     </div>
   );
 }
@@ -30,14 +35,17 @@ function SidebarIcon({
   children,
   label,
   active,
+  onClick,
 }: {
   children: React.ReactNode;
   label: string;
   active?: boolean;
+  onClick?: () => void;
 }) {
   return (
     <button
       title={label}
+      onClick={onClick}
       style={{
         width: 40,
         height: 40,
@@ -69,6 +77,14 @@ function GitHubGlyph() {
         2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87
         3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38
         A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z" />
+    </svg>
+  );
+}
+
+function DiagnosticGlyph() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M3 12h4l3 8 4-16 3 8h4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

@@ -25,7 +25,9 @@ const fuseApi = {
       return () => ipcRenderer.removeListener("app:stateChanged", listener);
     },
   },
-
+  diagnostics: {
+    get: () => ipcRenderer.invoke("diagnostics:get"),
+  }
 };
 
 contextBridge.exposeInMainWorld("fuse", fuseApi);
