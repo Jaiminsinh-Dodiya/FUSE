@@ -31,6 +31,7 @@ export function buildSnapshot(
   githubView: WebContentsView | null,
   appRegistry: AppRegistry,
   diagnostics: DiagnosticsCollector,
+  masterSearchRegistered: boolean,
 ): DiagnosticsSnapshot {
   const shellMetrics = findProcessMetrics(shellWindow.webContents.getOSProcessId());
   const githubMetrics = githubView
@@ -55,8 +56,7 @@ export function buildSnapshot(
       granted: counts.permissionsGranted,
       denied: counts.permissionsDenied,
     },
-    // Honest, not aspirational: Master Search isn't built yet.
-    shortcut: { masterSearch: "NOT_REGISTERED" },
+    shortcut: { masterSearch: masterSearchRegistered ? "REGISTERED" : "NOT_REGISTERED" },
     renderer: "HEALTHY",
   };
 }

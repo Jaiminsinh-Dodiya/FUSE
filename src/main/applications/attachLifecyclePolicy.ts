@@ -4,6 +4,10 @@ import type { AppLifecycleState } from "./AppState";
 
 const reloadHandlersRegistered = new Set<string>();
 
+export interface LifecycleHandle {
+  reload: () => void;
+}
+
 /**
  * Wires a live WebContentsView's real Chromium events to AppRegistry
  * state transitions, and broadcasts each change to the renderer so
@@ -22,7 +26,7 @@ export function attachLifecyclePolicy(
   appURL: string,
   registry: AppRegistry,
   shellWindow: BrowserWindow,
-): void {
+): LifecycleHandle {
   const { webContents } = view;
 
   function setState(state: AppLifecycleState): void {
@@ -37,6 +41,22 @@ export function attachLifecyclePolicy(
     view.setVisible(!isFailureState);
 
     shellWindow.webContents.send("app:stateChanged", { appId, state });
+  }
+
+  function reload(): void {
+    const current = registry.get(appId)?.state;
+    // FAILED/CRASHED/UNRESPONSIVE only permit LOADING; a healthy
+    // app permits RELOADING. Route to whichever is actually legal.
+    const target: AppLifecycleState =
+      current === "ACTIVE" || current === "BACKGROUND" || current === "RELOADING"
+        ? "RELOADING"
+        : "LOADING";
+    setState(target);
+    // Explicitly navigate to the app's real URL rather than
+    // reload() — reload() replays whatever was LAST attempted,
+    // which after a failure is the broken URL itself, not the
+    // app's actual destination.
+    void webContents.loadURL(appURL);
   }
 
   setState("LOADING");
@@ -82,18 +102,9 @@ export function attachLifecyclePolicy(
   if (!reloadHandlersRegistered.has(appId)) {
     reloadHandlersRegistered.add(appId);
     ipcMain.handle(`app:reload:${appId}`, () => {
-      const current = registry.get(appId)?.state;
-      // FAILED/CRASHED/UNRESPONSIVE only permit LOADING; a healthy
-      // app permits RELOADING. Route to whichever is actually legal.
-      const target: AppLifecycleState =
-        current === "ACTIVE" || current === "BACKGROUND" || current === "RELOADING"
-          ? "RELOADING"
-          : "LOADING";
-      setState(target);// Explicitly navigate to the app's real URL rather than
-      // reload() — reload() replays whatever was LAST attempted,
-      // which after a failure is the broken URL itself, not the
-      // app's actual destination.
-      void webContents.loadURL(appURL);
+      reload();
     });
   }
+
+  return { reload };
 }

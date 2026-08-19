@@ -27,7 +27,16 @@ const fuseApi = {
   },
   diagnostics: {
     get: () => ipcRenderer.invoke("diagnostics:get"),
-  }
+  },
+  commands: {
+    list: (): Promise<{ id: string; title: string }[]> => ipcRenderer.invoke("commands:list"),
+    execute: (id: string) => ipcRenderer.invoke("commands:execute", id),
+    onTogglePalette: (callback: () => void) => {
+      const listener = () => callback();
+      ipcRenderer.on("commands:togglePalette", listener);
+      return () => ipcRenderer.removeListener("commands:togglePalette", listener);
+    },
+  },
 };
 
 contextBridge.exposeInMainWorld("fuse", fuseApi);
