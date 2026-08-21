@@ -1,5 +1,6 @@
 import { app, BrowserWindow, WebContentsView, ipcMain } from "electron";
 import { WindowController } from "./windows/WindowController";
+import { ConfigurationManager } from "./config/ConfigurationManager";
 import { SessionManager } from "./session/SessionManager";
 import { SecurityPolicy } from "./security/SecurityPolicy";
 import { DiagnosticsCollector } from "./diagnostics/DiagnosticsCollector";
@@ -19,6 +20,7 @@ if (!gotLock) {
 }
 
 const windowController = new WindowController();
+const configManager = new ConfigurationManager();
 const sessionManager = new SessionManager();
 const appRegistry = new AppRegistry();
 const diagnosticsCollector = new DiagnosticsCollector();
@@ -75,6 +77,30 @@ function launchGithub(): void {
       win?.focus();
     },
   });
+
+  // TEST-ONLY: verifies CRASHED/UNRESPONSIVE lifecycle handling for
+  // real, rather than trusting code symmetry with the tested FAILED
+  // path. Gated behind !app.isPackaged so these can never appear in
+  // a real build — see brief section 51 on marking debugging
+  // workarounds clearly and not shipping them.
+  if (!app.isPackaged) {
+    commandRegistry.register({
+      id: "test-crash-github",
+      title: "[TEST] Crash GitHub renderer",
+      run: () => {
+        view.webContents.forcefullyCrashRenderer();
+      },
+    });
+    commandRegistry.register({
+      id: "test-hang-github",
+      title: "[TEST] Hang GitHub renderer (8s)",
+      run: () => {
+        void view.webContents.executeJavaScript(
+          "const s=Date.now(); while(Date.now()-s<8000){}",
+        );
+      },
+    });
+  }
 }
 
 ipcMain.handle("diagnostics:get", () => {
@@ -91,13 +117,17 @@ ipcMain.handle("appview:setOverlayVisible", (_event, open: boolean) => {
 
 app.whenReady().then(() => {
   registerWindowControlsIpc();
-  windowController.create();
+  windowController.create(configManager.getWindowBounds());
+  windowController.onBoundsChanged = (bounds) => {
+    configManager.setWindowBounds(bounds);
+    configManager.save();
+  };
   launchGithub();
   masterSearchRegistered = registerMasterSearchShortcut(windowController.get()!);
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      windowController.create();
+      windowController.create(configManager.getWindowBounds());
       launchGithub();
     }
   });
@@ -106,6 +136,14 @@ app.whenReady().then(() => {
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
+  }
+});
+
+app.on("before-quit", () => {
+  const win = windowController.get();
+  if (win) {
+    configManager.setWindowBounds(win.getBounds());
+    configManager.save();
   }
 });
 
