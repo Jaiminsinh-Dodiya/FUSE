@@ -1,4 +1,11 @@
-import { app, BrowserWindow, WebContentsView, ipcMain } from "electron";
+import {
+  app,
+  BrowserWindow,
+  WebContentsView,
+  ipcMain,
+  type WebContents,
+  type IpcMainInvokeEvent,
+} from "electron";
 import { WindowController } from "./windows/WindowController";
 import { ConfigurationManager } from "./config/ConfigurationManager";
 import { SessionManager } from "./session/SessionManager";
@@ -34,6 +41,31 @@ const securityPolicy = new SecurityPolicy(
   diagnosticsCollector,
 );
 
+/**
+ * Explicit IPC sender validation (brief section 12). Previously this
+ * boundary existed only "by accident" — no preload script runs on
+ * the GitHub app view, so it had no way to reach ipcMain regardless.
+ * This makes that assumption explicit and checkable instead of
+ * leaving it implicit forever.
+ */
+function isFromShellWindow(sender: WebContents): boolean {
+  const shellWindow = windowController.get();
+  return shellWindow?.webContents.id === sender.id;
+}
+
+function handleFromShell<R>(
+  channel: string,
+  fn: (event: IpcMainInvokeEvent, ...args: any[]) => R,
+): void {
+  ipcMain.handle(channel, (event, ...args) => {
+    if (!isFromShellWindow(event.sender)) {
+      console.error(`[security] rejected IPC from unexpected sender on "${channel}"`);
+      throw new Error("unauthorized sender");
+    }
+    return fn(event, ...args);
+  });
+}
+
 function launchGithub(): void {
   if (!appRegistry.get("github")) {
     appRegistry.register(githubAppDefinition);
@@ -46,6 +78,8 @@ function launchGithub(): void {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      webSecurity: true,
+      allowRunningInsecureContent: false,
     },
   });
   githubView = view;
@@ -103,15 +137,15 @@ function launchGithub(): void {
   }
 }
 
-ipcMain.handle("diagnostics:get", () => {
+handleFromShell("diagnostics:get", () => {
   const shellWindow = windowController.get();
   if (!shellWindow) return null;
   return buildSnapshot(shellWindow, githubView, appRegistry, diagnosticsCollector, masterSearchRegistered);
 });
 
-ipcMain.handle("commands:list", () => commandRegistry.list());
-ipcMain.handle("commands:execute", (_event, id: string) => commandRegistry.execute(id));
-ipcMain.handle("appview:setOverlayVisible", (_event, open: boolean) => {
+handleFromShell("commands:list", () => commandRegistry.list());
+handleFromShell("commands:execute", (_event, id: string) => commandRegistry.execute(id));
+handleFromShell("appview:setOverlayVisible", (_event, open: boolean) => {
   githubLifecycle?.setOverlayVisible(open);
 });
 
