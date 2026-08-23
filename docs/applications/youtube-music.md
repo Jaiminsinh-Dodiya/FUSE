@@ -12,6 +12,12 @@ Status: verified against real usage (manual testing, August 2026).
   behavior. `persist:fuse-youtube-music` partition working correctly.
 - Search, playback, and general navigation tested with a real account
   — no issues found.
+  Background audio confirmed working correctly: switching away to
+  another application (view hidden via setVisible(false)) does NOT
+  interrupt playback — audio continues in the background, matching
+  expected real-world music-app behavior. This works because
+  setVisible only affects compositing, not the renderer process or
+  its JS/audio execution — no special handling was needed or added.
 
 ## Identity
 - id: `youtube-music`
