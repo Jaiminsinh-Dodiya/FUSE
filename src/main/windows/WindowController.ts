@@ -100,6 +100,13 @@ export class WindowController {
     this.repositionViews();
   }
 
+  detachApplicationView(view: WebContentsView): void {
+    if (!this.window) return;
+    this.window.contentView.removeChildView(view);
+    this.appViews = this.appViews.filter((v) => v !== view);
+  }
+
+
   private repositionViews(): void {
     if (!this.window) return;
     const b = this.window.getContentBounds();
