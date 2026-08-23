@@ -1,32 +1,33 @@
 # YouTube Music Compatibility Contract
 
-Status: draft — unverified hypothesis, same as github.md's original
-status before real testing. Must be verified against observed
-behavior before treated as final (brief section 10/14).
+Status: verified against real usage (manual testing, August 2026).
+
+## Verified
+
+- No bot-detection or challenge wall encountered (unlike GitHub, which
+  required a User-Agent fix). YouTube Music loads and functions
+  normally with FUSE's shared SessionManager UA handling.
+- Session persistence confirmed: signed in, fully closed FUSE,
+  reopened it — remained authenticated, same as GitHub's verified
+  behavior. `persist:fuse-youtube-music` partition working correctly.
+- Search, playback, and general navigation tested with a real account
+  — no issues found.
 
 ## Identity
 - id: `youtube-music`
 - primary URL: `https://music.youtube.com`
 
 ## Navigation
-Hypothesis: `music.youtube.com`, `youtube.com`, `ytimg.com` (thumbnails),
-`googleusercontent.com` (avatars), `accounts.google.com` (Google login
-redirect flow). Needs real click-through testing — search, play a
-track, open settings, sign in — to confirm nothing legitimate is
-missing and nothing unnecessary is present.
+Verified working: `music.youtube.com`, `youtube.com`, `ytimg.com`
+(thumbnails), `googleusercontent.com` (avatars), `accounts.google.com`
+(Google login redirect flow).
 
 ## Session
 `persist:fuse-youtube-music` — fully isolated from `persist:fuse-github`.
-No shared cookies/storage between applications, by design.
+No shared cookies/storage between applications, by design. Confirmed
+via testing: signing into one app does not affect the other.
 
 ## Permissions
 Default-deny, same as GitHub. Media playback does not require any
 special Electron permission grant (audio/video autoplay via the
 `<audio>`/`<video>` elements works without OS-level permission).
-
-## Known unknowns
-- Not yet tested: does YouTube Music's UI trigger any bot-detection
-  similar to GitHub's? (GitHub required a User-Agent fix — see
-  SessionManager.)
-- Not yet tested: does closing/reopening FUSE preserve login the same
-  way it does for GitHub?
