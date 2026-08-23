@@ -138,6 +138,9 @@ handleFromShell("appview:setOverlayVisible", (_event, open: boolean) => {
     viewManager.get(id)?.lifecycle.setOverlayVisible(open);
   }
 });
+handleFromShell("app:getState", (_event, appId: string) => {
+  return appRegistry.get(appId)?.state ?? null;
+});
 handleFromShell("applications:switch", (_event, appId: string) => {
   switchApplication(appId);
 });
