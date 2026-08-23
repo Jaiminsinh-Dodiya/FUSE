@@ -25,6 +25,15 @@ const fuseApi = {
       return () => ipcRenderer.removeListener("app:stateChanged", listener);
     },
     setOverlayVisible: (open: boolean) => ipcRenderer.invoke("appview:setOverlayVisible", open),
+    switch: (appId: string) => ipcRenderer.invoke("applications:switch", appId),
+    getActive: (): Promise<string | null> => ipcRenderer.invoke("applications:getActive"),
+    onActiveChanged: (callback: (payload: { appId: string }) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: { appId: string }) =>
+        callback(payload);
+      ipcRenderer.on("app:activeChanged", listener);
+      return () => ipcRenderer.removeListener("app:activeChanged", listener);
+    },
+
   },
   diagnostics: {
     get: () => ipcRenderer.invoke("diagnostics:get"),

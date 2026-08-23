@@ -28,25 +28,26 @@ function findProcessMetrics(pid: number) {
  */
 export function buildSnapshot(
   shellWindow: BrowserWindow,
-  githubView: WebContentsView | null,
+  activeView: WebContentsView | null,
   appRegistry: AppRegistry,
   diagnostics: DiagnosticsCollector,
   masterSearchRegistered: boolean,
+  activeAppId: string,
 ): DiagnosticsSnapshot {
   const shellMetrics = findProcessMetrics(shellWindow.webContents.getOSProcessId());
-  const githubMetrics = githubView
-    ? findProcessMetrics(githubView.webContents.getOSProcessId())
+  const activeMetrics = activeView
+    ? findProcessMetrics(activeView.webContents.getOSProcessId())
     : { cpuPercent: 0, memoryMB: 0 };
 
-  const githubEntry = appRegistry.get("github");
+  const activeEntry = appRegistry.get(activeAppId);
   const counts = diagnostics.getCounts();
 
   return {
     shell: shellMetrics,
     github: {
-      ...githubMetrics,
-      state: githubEntry?.state ?? "UNKNOWN",
-      session: "persist:fuse-github",
+      ...activeMetrics,
+      state: activeEntry?.state ?? "UNKNOWN",
+      session: `persist:fuse-${activeAppId}`,
     },
     navigation: {
       allowed: counts.navigationAllowed,

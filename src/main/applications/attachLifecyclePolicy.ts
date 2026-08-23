@@ -7,21 +7,19 @@ const reloadHandlersRegistered = new Set<string>();
 export interface LifecycleHandle {
   reload: () => void;
   setOverlayVisible: (open: boolean) => void;
+  setBackgrounded: (backgrounded: boolean) => void;
 }
 
 /**
  * Wires a live WebContentsView's real Chromium events to AppRegistry
- * state transitions, and broadcasts each change to the renderer so
- * RecoveryOverlay can react. This is what makes AppState's lifecycle
- * machine real instead of just types nothing ever touches.
+ * state transitions, and broadcasts each change to the renderer.
  *
- * Important: a WebContentsView paints ABOVE the shell window's own
- * renderer content — it is a separate Electron layer, not part of
- * the DOM. So whenever the app should be hidden — a failure state,
- * or a shell overlay like the diagnostics panel or command palette
- * being open — we must explicitly hide the view (setVisible(false)),
- * or whatever the renderer draws underneath it will never be seen,
- * even though it's correctly rendered.
+ * Visibility is controlled by THREE independent concerns, all routed
+ * through one applyVisibility() so they never fight each other:
+ *  - a failure state (FAILED/CRASHED/UNRESPONSIVE)
+ *  - a shell overlay being open (diagnostics/command palette)
+ *  - the app being backgrounded by app-switching (multiple apps now
+ *    exist as of FUSE 0.2 — YouTube Music)
  */
 export function attachLifecyclePolicy(
   view: WebContentsView,
@@ -33,9 +31,10 @@ export function attachLifecyclePolicy(
   const { webContents } = view;
   let isFailureState = false;
   let overlayOpen = false;
+  let isBackgrounded = false;
 
   function applyVisibility(): void {
-    view.setVisible(!isFailureState && !overlayOpen);
+    view.setVisible(!isFailureState && !overlayOpen && !isBackgrounded);
   }
 
   function setState(state: AppLifecycleState): void {
@@ -57,39 +56,45 @@ export function attachLifecyclePolicy(
     applyVisibility();
   }
 
+  function setBackgrounded(backgrounded: boolean): void {
+    isBackgrounded = backgrounded;
+    applyVisibility();
+    // Only attempt the ACTIVE<->BACKGROUND transition from a state
+    // where it's actually legal. Transient states (LOADING, etc.)
+    // just get hidden/shown visually without a state transition —
+    // did-finish-load below handles landing in the right state once
+    // loading completes.
+    const current = registry.get(appId)?.state;
+    if (backgrounded && current === "ACTIVE") {
+      setState("BACKGROUND");
+    } else if (!backgrounded && current === "BACKGROUND") {
+      setState("ACTIVE");
+    }
+  }
+
   function reload(): void {
     const current = registry.get(appId)?.state;
-    // FAILED/CRASHED/UNRESPONSIVE only permit LOADING; a healthy
-    // app permits RELOADING. Route to whichever is actually legal.
     const target: AppLifecycleState =
       current === "ACTIVE" || current === "BACKGROUND" || current === "RELOADING"
         ? "RELOADING"
         : "LOADING";
     setState(target);
-    // Explicitly navigate to the app's real URL rather than
-    // reload() — reload() replays whatever was LAST attempted,
-    // which after a failure is the broken URL itself, not the
-    // app's actual destination.
     void webContents.loadURL(appURL);
   }
 
   setState("LOADING");
 
   webContents.on("did-finish-load", () => {
-    // Chromium loads its own internal error page as content after a
-    // failed navigation, and THAT page's load also fires
-    // did-finish-load. Only treat this as real recovery if we were
-    // actually expecting one (LOADING/RELOADING) — otherwise this is
-    // just the error page finishing, not the app coming back.
     const current = registry.get(appId)?.state;
     if (current === "LOADING" || current === "RELOADING") {
-      setState("ACTIVE");
+      // Land in the state that matches current visibility intent —
+      // e.g. an app launched while another is active should finish
+      // loading into BACKGROUND, not flash ACTIVE then get hidden.
+      setState(isBackgrounded ? "BACKGROUND" : "ACTIVE");
     }
   });
 
   webContents.on("did-fail-load", (_event, errorCode, errorDescription) => {
-    // -3 is Chromium's "aborted" code, fired for cancelled/superseded
-    // navigations (e.g. a redirect) — not a real failure.
     if (errorCode === -3) return;
     console.warn(`[lifecycle] "${appId}" failed to load: ${errorDescription} (${errorCode})`);
     setState("FAILED");
@@ -105,9 +110,6 @@ export function attachLifecyclePolicy(
   });
 
   webContents.on("responsive", () => {
-    // Only auto-recover from UNRESPONSIVE. FAILED/CRASHED need an
-    // explicit user-initiated reload — don't hide errors just to
-    // make the UI look clean (brief section 23).
     if (registry.get(appId)?.state === "UNRESPONSIVE") {
       setState("ACTIVE");
     }
@@ -120,5 +122,5 @@ export function attachLifecyclePolicy(
     });
   }
 
-  return { reload, setOverlayVisible };
+  return { reload, setOverlayVisible, setBackgrounded };
 }

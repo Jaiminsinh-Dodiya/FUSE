@@ -1,10 +1,25 @@
 import { SIDEBAR_WIDTH } from "../chromeLayout";
 
-// Static, icon-only sidebar. No hover-expand — that's explicitly
-// future-only (brief section 33: "Animated Sidebar — Future Only").
-// One entry for now (GitHub); more appear here as real applications
-// are added, not before.
-export function Sidebar({ onToggleDiagnostics }: { onToggleDiagnostics: () => void }) {
+interface SidebarApp {
+  id: string;
+  label: string;
+  glyph: React.ReactNode;
+}
+
+const APPS: SidebarApp[] = [
+  { id: "github", label: "GitHub", glyph: <GitHubGlyph /> },
+  { id: "youtube-music", label: "YouTube Music", glyph: <MusicGlyph /> },
+];
+
+export function Sidebar({
+  activeAppId,
+  onSelectApp,
+  onToggleDiagnostics,
+}: {
+  activeAppId: string | null;
+  onSelectApp: (appId: string) => void;
+  onToggleDiagnostics: () => void;
+}) {
   return (
     <div
       style={{
@@ -19,9 +34,16 @@ export function Sidebar({ onToggleDiagnostics }: { onToggleDiagnostics: () => vo
         gap: 8,
       }}
     >
-      <SidebarIcon label="GitHub" active>
-        <GitHubGlyph />
-      </SidebarIcon>
+      {APPS.map((appItem) => (
+        <SidebarIcon
+          key={appItem.id}
+          label={appItem.label}
+          active={activeAppId === appItem.id}
+          onClick={() => onSelectApp(appItem.id)}
+        >
+          {appItem.glyph}
+        </SidebarIcon>
+      ))}
       <div style={{ marginTop: "auto", marginBottom: 12 }}>
         <SidebarIcon label="Diagnostics" onClick={onToggleDiagnostics}>
           <DiagnosticGlyph />
@@ -65,8 +87,6 @@ function SidebarIcon({
 }
 
 function GitHubGlyph() {
-  // Small inline glyph — avoids pulling in an icon library for one
-  // icon (brief section 52: don't add a dependency for a small task).
   return (
     <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
       <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
@@ -77,6 +97,16 @@ function GitHubGlyph() {
         2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87
         3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38
         A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z" />
+    </svg>
+  );
+}
+
+function MusicGlyph() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M9 18V5l12-2v13" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="6" cy="18" r="3" stroke="currentColor" strokeWidth="2" fill="none" />
+      <circle cx="18" cy="16" r="3" stroke="currentColor" strokeWidth="2" fill="none" />
     </svg>
   );
 }
