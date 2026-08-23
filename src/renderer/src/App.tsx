@@ -41,7 +41,7 @@ export function App() {
           onToggleDiagnostics={() => setDiagnosticsOpen((v) => !v)}
         />
         <div style={{ flex: 1, position: "relative" }}>
-          <RecoveryOverlay appId={activeAppId ?? "github"} />
+          {activeAppId && <RecoveryOverlay appId={activeAppId} />}          
           {diagnosticsOpen && <DiagnosticsPanel onClose={() => setDiagnosticsOpen(false)} />}
           <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
         </div>

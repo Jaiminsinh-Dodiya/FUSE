@@ -7,24 +7,40 @@ type LifecycleState =
 const FAILURE_STATES: LifecycleState[] = ["FAILED", "CRASHED", "UNRESPONSIVE"];
 
 /**
- * Renders only when the given application's real lifecycle state
- * (broadcast from main via attachLifecyclePolicy) is a failure state.
- * The app's WebContentsView is hidden by the main process during
- * those states specifically so this overlay becomes visible — see
- * attachLifecyclePolicy's setState for the setVisible(false) call.
+ * Renders only when the given application's real lifecycle state is
+ * a failure state. Fetches the CURRENT real state on mount/appId
+ * change (via app:getState) rather than only relying on future
+ * onStateChanged events — otherwise switching to an app that already
+ * crashed while backgrounded would show a blank view with no
+ * explanation, since no state-change EVENT fires just from switching.
+ * That was a real bug, not a hypothetical: an app crashing while
+ * backgrounded, then being switched to, previously showed nothing.
  */
 export function RecoveryOverlay({ appId }: { appId: string }) {
-  const [state, setState] = useState<LifecycleState>("LOADING");
+  const [state, setState] = useState<LifecycleState | null>(null);
 
   useEffect(() => {
-    return window.fuse.applications.onStateChanged((payload: { appId: string; state: string }) => {
-      if (payload.appId === appId) {
-        setState(payload.state as LifecycleState);
-      }
+    let cancelled = false;
+
+    void window.fuse.applications.getState(appId).then((current: string | null) => {
+      if (!cancelled) setState((current as LifecycleState) ?? null);
     });
+
+    const unsubscribe = window.fuse.applications.onStateChanged(
+      (payload: { appId: string; state: string }) => {
+        if (payload.appId === appId) {
+          setState(payload.state as LifecycleState);
+        }
+      },
+    );
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, [appId]);
 
-  if (!FAILURE_STATES.includes(state)) {
+  if (!state || !FAILURE_STATES.includes(state)) {
     return null;
   }
 

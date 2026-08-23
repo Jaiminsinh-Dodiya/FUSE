@@ -33,6 +33,7 @@ const fuseApi = {
       ipcRenderer.on("app:activeChanged", listener);
       return () => ipcRenderer.removeListener("app:activeChanged", listener);
     },
+    getState: (appId: string): Promise<string | null> => ipcRenderer.invoke("app:getState", appId),
 
   },
   diagnostics: {

@@ -1,11 +1,4 @@
-import {
-  app,
-  BrowserWindow,
-  WebContentsView,
-  ipcMain,
-  type WebContents,
-  type IpcMainInvokeEvent,
-} from "electron";
+import {app, BrowserWindow, ipcMain, type WebContents, type IpcMainInvokeEvent, } from "electron";
 import { WindowController } from "./windows/WindowController";
 import { ConfigurationManager } from "./config/ConfigurationManager";
 import { SessionManager } from "./session/SessionManager";
@@ -14,10 +7,10 @@ import { DiagnosticsCollector } from "./diagnostics/DiagnosticsCollector";
 import { buildSnapshot } from "./diagnostics/buildSnapshot";
 import { attachNavigationPolicy } from "./security/attachNavigationPolicy";
 import { attachDevToolsPolicy } from "./windows/attachDevToolsPolicy";
-import { attachLifecyclePolicy, type LifecycleHandle } from "./applications/attachLifecyclePolicy";
 import { AppRegistry } from "./applications/AppRegistry";
 import type { AppDefinition } from "./applications/AppDefinition";
 import type { AppSecurityConfig } from "./security/SecurityPolicy";
+import { ViewManager, type AppRuntime } from "./applications/ViewManager";
 import { registerWindowControlsIpc } from "./windows/windowControlsIpc";
 import { CommandRegistry } from "./commands/CommandRegistry";
 import { registerMasterSearchShortcut, unregisterMasterSearchShortcut } from "./commands/globalShortcut";
@@ -36,11 +29,7 @@ const appRegistry = new AppRegistry();
 const diagnosticsCollector = new DiagnosticsCollector();
 const commandRegistry = new CommandRegistry();
 
-interface AppRuntime {
-  view: WebContentsView;
-  lifecycle: LifecycleHandle;
-}
-const appRuntimes = new Map<string, AppRuntime>();
+
 let activeAppId: string | null = null;
 let masterSearchRegistered = false;
 
@@ -53,6 +42,8 @@ const securityPolicy = new SecurityPolicy(
   ]),
   diagnosticsCollector,
 );
+
+const viewManager = new ViewManager(windowController, securityPolicy, appRegistry);
 
 function isFromShellWindow(sender: WebContents): boolean {
   const shellWindow = windowController.get();
@@ -73,12 +64,14 @@ function handleFromShell<R>(
 }
 
 function switchApplication(appId: string): void {
-  if (activeAppId === appId || !appRuntimes.has(appId)) return;
+  if (activeAppId === appId || !viewManager.get(appId)) return;
 
-  for (const [id, runtime] of appRuntimes) {
-    if (id !== appId) runtime.lifecycle.setBackgrounded(true);
+  for (const id of viewManager.list()) {
+    if (id !== appId) {
+      viewManager.get(id)?.lifecycle.setBackgrounded(true);
+    }
   }
-  appRuntimes.get(appId)!.lifecycle.setBackgrounded(false);
+  viewManager.get(appId)!.lifecycle.setBackgrounded(false);
 
   activeAppId = appId;
   windowController.get()?.webContents.send("app:activeChanged", { appId });
@@ -89,40 +82,17 @@ function launchApplication(
   secConfig: AppSecurityConfig,
   startVisible: boolean,
 ): void {
-  if (!appRegistry.get(def.id)) {
-    appRegistry.register(def);
-  }
   const appSession = sessionManager.getOrCreate(def.id, secConfig);
+  const runtime = viewManager.launch(def, appSession, startVisible);
 
-  const view = new WebContentsView({
-    webPreferences: {
-      session: appSession,
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-      webSecurity: true,
-      allowRunningInsecureContent: false,
-    },
-  });
-
-  windowController.attachApplicationView(view);
-  attachNavigationPolicy(view, def.id, securityPolicy);
-  attachDevToolsPolicy(view);
-  const lifecycle = attachLifecyclePolicy(view, def.id, def.url, appRegistry, windowController.get()!);
-
-  appRuntimes.set(def.id, { view, lifecycle });
-  if (!startVisible) {
-    lifecycle.setBackgrounded(true);
-  } else {
+  if (startVisible) {
     activeAppId = def.id;
   }
-
-  void view.webContents.loadURL(def.url);
 
   commandRegistry.register({
     id: `reload-${def.id}`,
     title: `Reload ${def.name}`,
-    run: () => lifecycle.reload(),
+    run: () => runtime.lifecycle.reload(),
   });
   commandRegistry.register({
     id: `switch-${def.id}`,
@@ -134,13 +104,13 @@ function launchApplication(
     commandRegistry.register({
       id: `test-crash-${def.id}`,
       title: `[TEST] Crash ${def.name} renderer`,
-      run: () => view.webContents.forcefullyCrashRenderer(),
+      run: () => runtime.view.webContents.forcefullyCrashRenderer(),
     });
     commandRegistry.register({
       id: `test-hang-${def.id}`,
       title: `[TEST] Hang ${def.name} renderer (8s)`,
       run: () =>
-        void view.webContents.executeJavaScript(
+        void runtime.view.webContents.executeJavaScript(
           "const s=Date.now(); while(Date.now()-s<8000){}",
         ),
     });
@@ -150,7 +120,7 @@ function launchApplication(
 handleFromShell("diagnostics:get", () => {
   const shellWindow = windowController.get();
   if (!shellWindow || !activeAppId) return null;
-  const active = appRuntimes.get(activeAppId);
+  const active = viewManager.get(activeAppId);
   return buildSnapshot(
     shellWindow,
     active?.view ?? null,
@@ -164,11 +134,12 @@ handleFromShell("diagnostics:get", () => {
 handleFromShell("commands:list", () => commandRegistry.list());
 handleFromShell("commands:execute", (_event, id: string) => commandRegistry.execute(id));
 handleFromShell("appview:setOverlayVisible", (_event, open: boolean) => {
-  for (const runtime of appRuntimes.values()) {
-    // Overlay applies regardless of which app is active — diagnostics/
-    // palette should hide whichever app is currently visible.
-    if (!open || runtime.lifecycle) runtime.lifecycle.setOverlayVisible(open);
+  for (const id of viewManager.list()) {
+    viewManager.get(id)?.lifecycle.setOverlayVisible(open);
   }
+});
+handleFromShell("app:getState", (_event, appId: string) => {
+  return appRegistry.get(appId)?.state ?? null;
 });
 handleFromShell("applications:switch", (_event, appId: string) => {
   switchApplication(appId);
