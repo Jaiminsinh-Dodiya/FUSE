@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 interface Snapshot {
   shell: { cpuPercent: number; memoryMB: number };
-  github: { cpuPercent: number; memoryMB: number; state: string; session: string };
+  activeApp: { id: string; cpuPercent: number; memoryMB: number; state: string; session: string };
   navigation: { allowed: number; blocked: number };
   permissions: { granted: number; denied: number };
   shortcut: { masterSearch: string };
@@ -65,10 +65,11 @@ export function DiagnosticsPanel({ onClose }: { onClose: () => void }) {
           <Row label="Shell CPU" value={`${snapshot.shell.cpuPercent}%`} />
           <Row label="Shell Memory" value={`${snapshot.shell.memoryMB} MB`} />
           <Gap />
-          <Row label="GitHub CPU" value={`${snapshot.github.cpuPercent}%`} />
-          <Row label="GitHub Memory" value={`${snapshot.github.memoryMB} MB`} />
-          <Row label="GitHub State" value={snapshot.github.state} />
-          <Row label="Session" value={snapshot.github.session} />
+          <Row label="Active App" value={snapshot.activeApp.id} />
+          <Row label="App CPU" value={`${snapshot.activeApp.cpuPercent}%`} />
+          <Row label="App Memory" value={`${snapshot.activeApp.memoryMB} MB`} />
+          <Row label="App State" value={snapshot.activeApp.state} />
+          <Row label="Session" value={snapshot.activeApp.session} />
           <Gap />
           <Row label="Nav Allowed" value={String(snapshot.navigation.allowed)} />
           <Row label="Nav Blocked" value={String(snapshot.navigation.blocked)} />

@@ -4,7 +4,7 @@ import type { DiagnosticsCollector } from "./DiagnosticsCollector";
 
 export interface DiagnosticsSnapshot {
   shell: { cpuPercent: number; memoryMB: number };
-  github: { cpuPercent: number; memoryMB: number; state: string; session: string };
+  activeApp: { id: string; cpuPercent: number; memoryMB: number; state: string; session: string };
   navigation: { allowed: number; blocked: number };
   permissions: { granted: number; denied: number };
   shortcut: { masterSearch: "REGISTERED" | "NOT_REGISTERED" };
@@ -44,7 +44,8 @@ export function buildSnapshot(
 
   return {
     shell: shellMetrics,
-    github: {
+    activeApp: {
+      id: activeAppId,
       ...activeMetrics,
       state: activeEntry?.state ?? "UNKNOWN",
       session: `persist:fuse-${activeAppId}`,
