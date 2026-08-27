@@ -17,6 +17,14 @@ import { registerMasterSearchShortcut, unregisterMasterSearchShortcut } from "./
 import { githubAppDefinition, githubSecurityConfig } from "./applications/github";
 import { youtubeMusicAppDefinition, youtubeMusicSecurityConfig } from "./applications/youtubeMusic";
 
+const KNOWN_APPLICATIONS: Record<
+  string,
+  { def: AppDefinition; securityConfig: AppSecurityConfig }
+> = {
+  github: { def: githubAppDefinition, securityConfig: githubSecurityConfig },
+  "youtube-music": { def: youtubeMusicAppDefinition, securityConfig: youtubeMusicSecurityConfig },
+};
+
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
   app.quit();
@@ -29,17 +37,13 @@ const appRegistry = new AppRegistry();
 const diagnosticsCollector = new DiagnosticsCollector();
 const commandRegistry = new CommandRegistry();
 
-
 let activeAppId: string | null = null;
 let masterSearchRegistered = false;
 
 // Both apps' configs known upfront, so SecurityPolicy is built once
 // with the full map — no need for post-construction mutation.
 const securityPolicy = new SecurityPolicy(
-  new Map([
-    ["github", githubSecurityConfig],
-    ["youtube-music", youtubeMusicSecurityConfig],
-  ]),
+  new Map(Object.entries(KNOWN_APPLICATIONS).map(([id, a]) => [id, a.securityConfig])),
   diagnosticsCollector,
 );
 
