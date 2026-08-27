@@ -39,10 +39,10 @@ export function isRecoverableState(state: AppLifecycleState): boolean {
  * by AppRegistry.transition() rather than silently permitted. */
 const ALLOWED_TRANSITIONS: Readonly<Record<AppLifecycleState, readonly AppLifecycleState[]>> = {
   CREATED: ["LOADING", "FAILED"],
-  LOADING: ["ACTIVE", "FAILED", "CRASHED", "UNRESPONSIVE"],
+  LOADING: ["ACTIVE", "BACKGROUND", "FAILED", "CRASHED", "UNRESPONSIVE"],
   ACTIVE: ["BACKGROUND", "RELOADING", "FAILED", "CRASHED", "BLOCKED", "UNRESPONSIVE"],
-  BACKGROUND: ["ACTIVE", "FAILED", "CRASHED", "UNRESPONSIVE"],
-  RELOADING: ["ACTIVE", "FAILED", "CRASHED", "UNRESPONSIVE"],
+  BACKGROUND: ["ACTIVE", "RELOADING", "FAILED", "CRASHED", "UNRESPONSIVE"],
+  RELOADING: ["ACTIVE", "BACKGROUND", "FAILED", "CRASHED", "UNRESPONSIVE"],
   FAILED: ["DESTROYED", "LOADING"],
   CRASHED: ["DESTROYED", "LOADING"],
   BLOCKED: ["DESTROYED"],
