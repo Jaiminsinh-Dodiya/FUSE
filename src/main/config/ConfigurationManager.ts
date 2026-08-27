@@ -13,25 +13,28 @@ export interface FuseConfig {
   schemaVersion: 0;
   window: WindowBounds;
   applications: { id: string }[];
+  activeApplication?: string;
 }
 
 const DEFAULT_CONFIG: FuseConfig = {
   schemaVersion: 0,
   window: { width: 1280, height: 800 },
-  applications: [{ id: "github" }],
+  applications: [{ id: "github" }, { id: "youtube-music" }],
+  activeApplication: "github",
 };
 
 /**
  * Simple local JSON config, matching the schema in brief section 19.
- * Deliberately small: window bounds + application list only. No
- * theme/sidebar config yet — nothing is actually configurable there
- * yet, so adding fields for it now would be speculative (Rule 3: do
- * not abstract until a second real use case exists).
+ * Deliberately small: window bounds + application list + active
+ * application only. No theme/sidebar config yet — nothing is
+ * actually configurable there yet, so adding fields for it now would
+ * be speculative (Rule 3: do not abstract until a second real use
+ * case exists).
  *
  * Critical constraint (brief section 18): this file must NEVER
  * contain credentials, cookies, tokens, or any authentication data.
- * GitHub's session lives entirely in its own Electron session
- * partition (persist:fuse-github) — a completely separate system.
+ * Each application's session lives entirely in its own Electron
+ * session partition — a completely separate system.
  */
 export class ConfigurationManager {
   private readonly path = join(app.getPath("userData"), "fuse-config.json");
@@ -54,6 +57,7 @@ export class ConfigurationManager {
         schemaVersion: 0,
         window: { ...DEFAULT_CONFIG.window, ...parsed.window },
         applications: parsed.applications ?? DEFAULT_CONFIG.applications,
+        activeApplication: parsed.activeApplication ?? DEFAULT_CONFIG.activeApplication,
       };
     } catch (err) {
       console.error("[config] failed to read fuse-config.json, using defaults:", err);
@@ -75,5 +79,17 @@ export class ConfigurationManager {
 
   setWindowBounds(bounds: WindowBounds): void {
     this.config.window = bounds;
+  }
+
+  getApplicationIds(): string[] {
+    return this.config.applications.map((a) => a.id);
+  }
+
+  getActiveApplication(): string | undefined {
+    return this.config.activeApplication;
+  }
+
+  setActiveApplication(appId: string): void {
+    this.config.activeApplication = appId;
   }
 }
