@@ -78,6 +78,8 @@ function switchApplication(appId: string): void {
   viewManager.get(appId)!.lifecycle.setBackgrounded(false);
 
   activeAppId = appId;
+  configManager.setActiveApplication(appId);
+  configManager.save();
   windowController.get()?.webContents.send("app:activeChanged", { appId });
 }
 
@@ -184,16 +186,14 @@ app.whenReady().then(() => {
     configManager.save();
   };
 
-  launchApplication(githubAppDefinition, githubSecurityConfig, true);
-  launchApplication(youtubeMusicAppDefinition, youtubeMusicSecurityConfig, false);
+  launchConfiguredApplications();
 
   masterSearchRegistered = registerMasterSearchShortcut(windowController.get()!);
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       windowController.create(configManager.getWindowBounds());
-      launchApplication(githubAppDefinition, githubSecurityConfig, true);
-      launchApplication(youtubeMusicAppDefinition, youtubeMusicSecurityConfig, false);
+      launchConfiguredApplications();
     }
   });
 });
