@@ -121,6 +121,32 @@ function launchApplication(
   }
 }
 
+function launchConfiguredApplications(): void {
+  const ids = configManager.getApplicationIds();
+  const preferredActive = configManager.getActiveApplication();
+
+  const valid = ids.filter((id) => {
+    if (!KNOWN_APPLICATIONS[id]) {
+      console.warn(`[config] unknown application id "${id}" in fuse-config.json, skipping`);
+      return false;
+    }
+    return true;
+  });
+
+  if (valid.length === 0) {
+    console.warn("[config] no valid applications configured, falling back to github");
+    valid.push("github");
+  }
+
+  for (const id of valid) {
+    const app = KNOWN_APPLICATIONS[id];
+    if (!app) continue;
+    const { def, securityConfig } = app;
+    const startVisible = id === preferredActive || (!preferredActive && id === valid[0]);
+    launchApplication(def, securityConfig, startVisible);
+  }
+}
+
 handleFromShell("diagnostics:get", () => {
   const shellWindow = windowController.get();
   if (!shellWindow || !activeAppId) return null;
