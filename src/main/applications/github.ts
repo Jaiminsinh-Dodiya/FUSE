@@ -6,6 +6,15 @@ export const githubAppDefinition: AppDefinition = {
   name: "GitHub",
   url: "https://github.com",
   category: "development",
+  capabilities: {
+    downloads: {
+      enabled: true,
+      defaultFolder: "downloads",
+    },
+    clipboard: true,
+    externalLinks: true,
+    notifications: true,
+  },
 };
 
 // Mirrors docs/applications/github.md — keep both in sync. The host
@@ -18,5 +27,9 @@ export const githubSecurityConfig: AppSecurityConfig = {
     "githubassets.com",
     "githubusercontent.com",
   ],
-  grantedPermissions: [],
+  grantedPermissions: [
+    "clipboard-read",
+    "clipboard-sanitized-write",
+    "notifications",
+  ],
 };
