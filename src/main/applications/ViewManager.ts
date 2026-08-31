@@ -3,6 +3,7 @@ import type { WindowController } from "../windows/WindowController";
 import type { SecurityPolicy } from "../security/SecurityPolicy";
 import type { AppRegistry } from "./AppRegistry";
 import type { AppDefinition } from "./AppDefinition";
+import type { CapabilityManager } from "../capabilities/CapabilityManager";
 import { attachNavigationPolicy } from "../security/attachNavigationPolicy";
 import { attachDevToolsPolicy } from "../windows/attachDevToolsPolicy";
 import { attachLifecyclePolicy, type LifecycleHandle } from "./attachLifecyclePolicy";
@@ -30,6 +31,7 @@ export class ViewManager {
     private readonly windowController: WindowController,
     private readonly securityPolicy: SecurityPolicy,
     private readonly appRegistry: AppRegistry,
+    private readonly capabilityManager?: CapabilityManager,
   ) {}
 
   launch(def: AppDefinition, session: Session, startVisible: boolean): AppRuntime {
@@ -54,6 +56,8 @@ export class ViewManager {
     this.windowController.attachApplicationView(view);
     attachNavigationPolicy(view, def.id, this.securityPolicy);
     attachDevToolsPolicy(view);
+    this.capabilityManager?.attachSession(def.id, session, def);
+    this.capabilityManager?.attachView(def.id, view, def);
     const lifecycle = attachLifecyclePolicy(
       view,
       def.id,
