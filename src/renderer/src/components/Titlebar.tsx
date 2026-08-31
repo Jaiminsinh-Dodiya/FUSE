@@ -1,13 +1,7 @@
 import { useState } from "react";
 import { TITLEBAR_HEIGHT } from "../chromeLayout";
 
-export function Titlebar({
-  onTogglePalette,
-  onToggleMedia,
-}: {
-  onTogglePalette?: () => void;
-  onToggleMedia?: () => void;
-}) {
+export function Titlebar() {
   const [isMaximized, setIsMaximized] = useState(false);
   const [trafficHover, setTrafficHover] = useState(false);
 
@@ -22,8 +16,8 @@ export function Titlebar({
         height: TITLEBAR_HEIGHT,
         display: "flex",
         alignItems: "center",
-        justifyContent: "space-between",
-        background: "rgba(255, 255, 255, 0.95)",
+        justifyContent: "flex-start",
+        background: "rgba(255, 255, 255, 0.98)",
         backdropFilter: "blur(16px)",
         WebkitBackdropFilter: "blur(16px)",
         borderBottom: "1px solid #e2e8f0",
@@ -34,7 +28,7 @@ export function Titlebar({
         zIndex: 40,
       } as React.CSSProperties}
     >
-      {/* Left: macOS Traffic Lights (Standard 14px size with exact SVG glyphs) */}
+      {/* Left: Minimalist macOS Traffic Lights */}
       <div
         onMouseEnter={() => setTrafficHover(true)}
         onMouseLeave={() => setTrafficHover(false)}
@@ -129,79 +123,6 @@ export function Titlebar({
             )}
           </svg>
         </TrafficLightButton>
-      </div>
-
-      {/* Center: Search Trigger / App Title */}
-      <div
-        onClick={onTogglePalette}
-        style={{
-          fontSize: 12,
-          color: "#475569",
-          fontWeight: 600,
-          letterSpacing: 0.5,
-          cursor: "pointer",
-          WebkitAppRegion: "no-drag",
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "4px 14px",
-          borderRadius: 8,
-          background: "#f1f5f9",
-          border: "1px solid #e2e8f0",
-          transition: "all 0.15s ease",
-        } as React.CSSProperties}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = "#e2e8f0";
-          e.currentTarget.style.color = "#0f172a";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = "#f1f5f9";
-          e.currentTarget.style.color = "#475569";
-        }}
-      >
-        <span>FUSE</span>
-        <span style={{ fontSize: 11, opacity: 0.6, fontFamily: "ui-monospace, monospace", fontWeight: 500 }}>
-          Win+Alt+Space
-        </span>
-      </div>
-
-      {/* Right: Media Overlay Trigger Button */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          WebkitAppRegion: "no-drag",
-        } as React.CSSProperties}
-      >
-        <button
-          onClick={onToggleMedia}
-          style={{
-            background: "#f1f5f9",
-            border: "1px solid #e2e8f0",
-            color: "#475569",
-            cursor: "pointer",
-            fontSize: 13,
-            padding: "4px 10px",
-            borderRadius: 8,
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            transition: "all 0.15s ease",
-            fontWeight: 500,
-          }}
-          title="Toggle Global Media Controller"
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = "#0f172a";
-            e.currentTarget.style.background = "#e2e8f0";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = "#475569";
-            e.currentTarget.style.background = "#f1f5f9";
-          }}
-        >
-          <span>🎵</span>
-          <span style={{ fontSize: 11 }}>Media</span>
-        </button>
       </div>
     </header>
   );

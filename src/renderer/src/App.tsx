@@ -44,10 +44,7 @@ export function App() {
       />
 
       {/* Layer 1: Shell Navigation & Chrome */}
-      <Titlebar
-        onTogglePalette={() => setPaletteOpen((v) => !v)}
-        onToggleMedia={() => setMediaOpen((v) => !v)}
-      />
+      <Titlebar />
       <div style={{ display: "flex", height: "calc(100vh - 40px)", position: "relative", zIndex: 1 }}>
         <Sidebar
           activeAppId={activeAppId}
