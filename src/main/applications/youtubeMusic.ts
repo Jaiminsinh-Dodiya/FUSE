@@ -6,6 +6,14 @@ export const youtubeMusicAppDefinition: AppDefinition = {
   name: "YouTube Music",
   url: "https://music.youtube.com",
   category: "entertainment",
+  capabilities: {
+    media: {
+      backgroundAudio: true,
+      mediaKeys: true,
+    },
+    externalLinks: true,
+    notifications: true,
+  },
 };
 
 // Unverified hypothesis, same status as github.ts originally was —
@@ -20,5 +28,5 @@ export const youtubeMusicSecurityConfig: AppSecurityConfig = {
     "googleusercontent.com",
     "accounts.google.com",
   ],
-  grantedPermissions: [],
+  grantedPermissions: ["media", "notifications"],
 };
