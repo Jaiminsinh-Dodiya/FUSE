@@ -34,7 +34,8 @@ const fuseApi = {
       return () => ipcRenderer.removeListener("app:activeChanged", listener);
     },
     getState: (appId: string): Promise<string | null> => ipcRenderer.invoke("app:getState", appId),
-
+    getCapabilities: (appId: string): Promise<Record<string, any> | null> =>
+      ipcRenderer.invoke("applications:getCapabilities", appId),
   },
   diagnostics: {
     get: () => ipcRenderer.invoke("diagnostics:get"),

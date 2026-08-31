@@ -2,9 +2,19 @@ import { useEffect, useState } from "react";
 
 interface Snapshot {
   shell: { cpuPercent: number; memoryMB: number };
-  activeApp: { id: string; cpuPercent: number; memoryMB: number; state: string; session: string };
+  activeApp: {
+    id: string;
+    cpuPercent: number;
+    memoryMB: number;
+    state: string;
+    session: string;
+    capabilities: Record<string, any>;
+    isPlayingMedia: boolean;
+    activeDownloads: number;
+  };
   navigation: { allowed: number; blocked: number };
   permissions: { granted: number; denied: number };
+  downloads: { started: number; completed: number };
   shortcut: { masterSearch: string };
   renderer: string;
 }
@@ -17,7 +27,7 @@ export function DiagnosticsPanel({ onClose }: { onClose: () => void }) {
 
     async function refresh() {
       const data = await window.fuse.diagnostics.get();
-      if (!cancelled) setSnapshot(data);
+      if (!cancelled) setSnapshot(data as Snapshot);
     }
 
     void refresh();
@@ -31,13 +41,19 @@ export function DiagnosticsPanel({ onClose }: { onClose: () => void }) {
     };
   }, []);
 
+  const capabilitiesList = snapshot?.activeApp.capabilities
+    ? Object.keys(snapshot.activeApp.capabilities)
+        .filter((k) => !!snapshot.activeApp.capabilities[k])
+        .join(", ")
+    : "none";
+
   return (
     <div
       style={{
         position: "absolute",
         top: 8,
         right: 8,
-        width: 280,
+        width: 300,
         background: "#161a22",
         border: "1px solid #262b36",
         borderRadius: 8,
@@ -70,9 +86,20 @@ export function DiagnosticsPanel({ onClose }: { onClose: () => void }) {
           <Row label="App Memory" value={`${snapshot.activeApp.memoryMB} MB`} />
           <Row label="App State" value={snapshot.activeApp.state} />
           <Row label="Session" value={snapshot.activeApp.session} />
+          <Row label="Capabilities" value={capabilitiesList || "none"} />
+          {snapshot.activeApp.capabilities?.media && (
+            <Row
+              label="Media State"
+              value={snapshot.activeApp.isPlayingMedia ? "▶ Playing" : "⏸ Idle"}
+            />
+          )}
           <Gap />
           <Row label="Nav Allowed" value={String(snapshot.navigation.allowed)} />
           <Row label="Nav Blocked" value={String(snapshot.navigation.blocked)} />
+          <Row
+            label="Downloads"
+            value={`${snapshot.activeApp.activeDownloads} active (${snapshot.downloads.completed} done)`}
+          />
           <Gap />
           <Row label="Master Search" value={snapshot.shortcut.masterSearch} />
           <Row label="Renderer" value={snapshot.renderer} />
@@ -86,7 +113,9 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between" }}>
       <span style={{ opacity: 0.6 }}>{label}</span>
-      <span>{value}</span>
+      <span style={{ textAlign: "right", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {value}
+      </span>
     </div>
   );
 }
