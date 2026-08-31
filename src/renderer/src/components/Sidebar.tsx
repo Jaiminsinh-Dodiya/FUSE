@@ -14,6 +14,35 @@ const APPS: SidebarApp[] = [
   { id: "youtube-music", label: "YouTube Music", category: "Media", glyph: <MusicGlyph /> },
 ];
 
+let insetsAnimFrame: number | null = null;
+
+function animateContentInsets(fromLeft: number, toLeft: number, durationMs = 280) {
+  if (insetsAnimFrame !== null) {
+    cancelAnimationFrame(insetsAnimFrame);
+    insetsAnimFrame = null;
+  }
+
+  const start = performance.now();
+
+  function step(now: number) {
+    const elapsed = now - start;
+    const progress = Math.min(1, elapsed / durationMs);
+    // Cubic bezier ease-out (1 - (1 - t)^3)
+    const ease = 1 - Math.pow(1 - progress, 3);
+    const currentLeft = Math.round(fromLeft + (toLeft - fromLeft) * ease);
+
+    void window.fuse.windowControls.setContentInsets({ left: currentLeft });
+
+    if (progress < 1) {
+      insetsAnimFrame = requestAnimationFrame(step);
+    } else {
+      insetsAnimFrame = null;
+    }
+  }
+
+  insetsAnimFrame = requestAnimationFrame(step);
+}
+
 export function Sidebar({
   activeAppId,
   onSelectApp,
@@ -36,14 +65,14 @@ export function Sidebar({
   const handleMouseEnter = () => {
     if (mode === "auto") {
       setIsHovered(true);
-      void window.fuse.windowControls.setContentInsets({ left: 220 });
+      animateContentInsets(SIDEBAR_WIDTH, 220, 280);
     }
   };
 
   const handleMouseLeave = () => {
     if (mode === "auto") {
       setIsHovered(false);
-      void window.fuse.windowControls.setContentInsets({ left: SIDEBAR_WIDTH });
+      animateContentInsets(220, SIDEBAR_WIDTH, 280);
     }
   };
 
@@ -53,7 +82,6 @@ export function Sidebar({
       onMouseLeave={handleMouseLeave}
       style={{
         width: isExpanded ? 220 : SIDEBAR_WIDTH,
-        minWidth: isExpanded ? 220 : SIDEBAR_WIDTH,
         height: "100%",
         background: "rgba(255, 255, 255, 0.98)",
         backdropFilter: "blur(20px)",
@@ -64,7 +92,7 @@ export function Sidebar({
         alignItems: "center",
         paddingTop: 12,
         boxSizing: "border-box",
-        transition: "width 0.28s cubic-bezier(0.16, 1, 0.3, 1), min-width 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease",
+        transition: "width 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease",
         boxShadow: isExpanded ? "6px 0 24px rgba(0, 0, 0, 0.07)" : "none",
         zIndex: 50,
         overflow: "hidden",
