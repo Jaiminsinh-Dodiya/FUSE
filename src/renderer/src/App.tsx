@@ -35,7 +35,7 @@ export function App() {
   }, [diagnosticsOpen, paletteOpen, mediaOpen]);
 
   return (
-    <div style={{ height: "100vh", background: "#0d0f14", overflow: "hidden", position: "relative" }}>
+    <div style={{ height: "100vh", background: "#f8fafc", color: "#0f172a", overflow: "hidden", position: "relative" }}>
       {/* Layer 0: Ambient Background Visual Engine */}
       <AmbientGrid
         performanceTier={visualPrefs.performanceTier}
