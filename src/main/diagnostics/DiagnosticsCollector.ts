@@ -1,4 +1,5 @@
 import type { PermissionName, PolicyDiagnosticsSink } from "../security/SecurityPolicy";
+import type { CapabilityDiagnosticsSink } from "../capabilities/CapabilityManager";
 
 /**
  * Replaces ConsoleDiagnostics: still logs every decision to console
@@ -6,11 +7,13 @@ import type { PermissionName, PolicyDiagnosticsSink } from "../security/Security
  * real diagnostics panel has actual numbers instead of console noise
  * nobody's reading. See brief section 37.
  */
-export class DiagnosticsCollector implements PolicyDiagnosticsSink {
+export class DiagnosticsCollector implements PolicyDiagnosticsSink, CapabilityDiagnosticsSink {
   private navigationAllowed = 0;
   private navigationBlocked = 0;
   private permissionsGranted = 0;
   private permissionsDenied = 0;
+  private downloadsStarted = 0;
+  private downloadsCompleted = 0;
 
   recordNavigationAllowed(url: string): void {
     this.navigationAllowed++;
@@ -28,12 +31,24 @@ export class DiagnosticsCollector implements PolicyDiagnosticsSink {
     console.log(`[security] permission "${name}": ${granted ? "granted" : "denied"}`);
   }
 
+  recordDownloadStarted(appId: string, filename: string): void {
+    this.downloadsStarted++;
+    console.log(`[capabilities] download started for "${appId}": ${filename}`);
+  }
+
+  recordDownloadCompleted(appId: string, filename: string, success: boolean): void {
+    if (success) this.downloadsCompleted++;
+    console.log(`[capabilities] download completed for "${appId}": ${filename} (success: ${success})`);
+  }
+
   getCounts() {
     return {
       navigationAllowed: this.navigationAllowed,
       navigationBlocked: this.navigationBlocked,
       permissionsGranted: this.permissionsGranted,
       permissionsDenied: this.permissionsDenied,
+      downloadsStarted: this.downloadsStarted,
+      downloadsCompleted: this.downloadsCompleted,
     };
   }
 }

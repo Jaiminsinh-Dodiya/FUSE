@@ -1,12 +1,24 @@
 import { app, type BrowserWindow, type WebContentsView } from "electron";
 import type { AppRegistry } from "../applications/AppRegistry";
 import type { DiagnosticsCollector } from "./DiagnosticsCollector";
+import type { CapabilityManager } from "../capabilities/CapabilityManager";
+import type { AppCapabilities } from "../applications/AppDefinition";
 
 export interface DiagnosticsSnapshot {
   shell: { cpuPercent: number; memoryMB: number };
-  activeApp: { id: string; cpuPercent: number; memoryMB: number; state: string; session: string };
+  activeApp: {
+    id: string;
+    cpuPercent: number;
+    memoryMB: number;
+    state: string;
+    session: string;
+    capabilities: AppCapabilities;
+    isPlayingMedia: boolean;
+    activeDownloads: number;
+  };
   navigation: { allowed: number; blocked: number };
   permissions: { granted: number; denied: number };
+  downloads: { started: number; completed: number };
   shortcut: { masterSearch: "REGISTERED" | "NOT_REGISTERED" };
   renderer: "HEALTHY";
 }
@@ -33,6 +45,7 @@ export function buildSnapshot(
   diagnostics: DiagnosticsCollector,
   masterSearchRegistered: boolean,
   activeAppId: string,
+  capabilityManager?: CapabilityManager,
 ): DiagnosticsSnapshot {
   const shellMetrics = findProcessMetrics(shellWindow.webContents.getOSProcessId());
   const activeMetrics = activeView
@@ -40,6 +53,7 @@ export function buildSnapshot(
     : { cpuPercent: 0, memoryMB: 0 };
 
   const activeEntry = appRegistry.get(activeAppId);
+  const capStatus = capabilityManager?.getStatus(activeAppId);
   const counts = diagnostics.getCounts();
 
   return {
@@ -49,6 +63,9 @@ export function buildSnapshot(
       ...activeMetrics,
       state: activeEntry?.state ?? "UNKNOWN",
       session: `persist:fuse-${activeAppId}`,
+      capabilities: activeEntry?.definition.capabilities ?? {},
+      isPlayingMedia: capStatus?.isPlayingMedia ?? false,
+      activeDownloads: capStatus?.activeDownloadsCount ?? 0,
     },
     navigation: {
       allowed: counts.navigationAllowed,
@@ -57,6 +74,10 @@ export function buildSnapshot(
     permissions: {
       granted: counts.permissionsGranted,
       denied: counts.permissionsDenied,
+    },
+    downloads: {
+      started: counts.downloadsStarted,
+      completed: counts.downloadsCompleted,
     },
     shortcut: { masterSearch: masterSearchRegistered ? "REGISTERED" : "NOT_REGISTERED" },
     renderer: "HEALTHY",
