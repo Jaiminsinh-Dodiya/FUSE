@@ -17,6 +17,8 @@ import { registerMasterSearchShortcut, unregisterMasterSearchShortcut } from "./
 import { githubAppDefinition, githubSecurityConfig } from "./applications/github";
 import { youtubeMusicAppDefinition, youtubeMusicSecurityConfig } from "./applications/youtubeMusic";
 
+import { CapabilityManager } from "./capabilities/CapabilityManager";
+
 const KNOWN_APPLICATIONS: Record<
   string,
   { def: AppDefinition; securityConfig: AppSecurityConfig }
@@ -35,6 +37,7 @@ const configManager = new ConfigurationManager();
 const sessionManager = new SessionManager();
 const appRegistry = new AppRegistry();
 const diagnosticsCollector = new DiagnosticsCollector();
+const capabilityManager = new CapabilityManager(diagnosticsCollector);
 const commandRegistry = new CommandRegistry();
 
 let activeAppId: string | null = null;
@@ -47,7 +50,12 @@ const securityPolicy = new SecurityPolicy(
   diagnosticsCollector,
 );
 
-const viewManager = new ViewManager(windowController, securityPolicy, appRegistry);
+const viewManager = new ViewManager(
+  windowController,
+  securityPolicy,
+  appRegistry,
+  capabilityManager,
+);
 
 function isFromShellWindow(sender: WebContents): boolean {
   const shellWindow = windowController.get();
@@ -160,6 +168,7 @@ handleFromShell("diagnostics:get", () => {
     diagnosticsCollector,
     masterSearchRegistered,
     activeAppId,
+    capabilityManager,
   );
 });
 
@@ -172,6 +181,9 @@ handleFromShell("appview:setOverlayVisible", (_event, open: boolean) => {
 });
 handleFromShell("app:getState", (_event, appId: string) => {
   return appRegistry.get(appId)?.state ?? null;
+});
+handleFromShell("applications:getCapabilities", (_event, appId: string) => {
+  return appRegistry.get(appId)?.definition.capabilities ?? null;
 });
 handleFromShell("applications:switch", (_event, appId: string) => {
   switchApplication(appId);
