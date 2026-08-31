@@ -55,9 +55,7 @@ export function App() {
             void window.fuse.applications.switch(id);
           }}
           onToggleDiagnostics={() => setDiagnosticsOpen((v) => !v)}
-          onAddApplication={() => setPaletteOpen(true)}
           isPlayingMedia={activeAppId === "youtube-music"}
-          mode={visualPrefs.sidebarMode}
         />
         <div style={{ flex: 1, position: "relative" }}>
           {activeAppId && <RecoveryOverlay appId={activeAppId} />}          

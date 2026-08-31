@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { SIDEBAR_WIDTH } from "../chromeLayout";
 import { StatusDock } from "./StatusDock";
+import { AppFlyoutMenu } from "./AppFlyoutMenu";
 
 interface SidebarApp {
   id: string;
@@ -14,254 +15,173 @@ const APPS: SidebarApp[] = [
   { id: "youtube-music", label: "YouTube Music", category: "Media", glyph: <MusicGlyph /> },
 ];
 
-let insetsAnimFrame: number | null = null;
-
-function animateContentInsets(fromLeft: number, toLeft: number, durationMs = 280) {
-  if (insetsAnimFrame !== null) {
-    cancelAnimationFrame(insetsAnimFrame);
-    insetsAnimFrame = null;
-  }
-
-  const start = performance.now();
-
-  function step(now: number) {
-    const elapsed = now - start;
-    const progress = Math.min(1, elapsed / durationMs);
-    // Cubic bezier ease-out (1 - (1 - t)^3)
-    const ease = 1 - Math.pow(1 - progress, 3);
-    const currentLeft = Math.round(fromLeft + (toLeft - fromLeft) * ease);
-
-    void window.fuse.windowControls.setContentInsets({ left: currentLeft });
-
-    if (progress < 1) {
-      insetsAnimFrame = requestAnimationFrame(step);
-    } else {
-      insetsAnimFrame = null;
-    }
-  }
-
-  insetsAnimFrame = requestAnimationFrame(step);
-}
-
 export function Sidebar({
   activeAppId,
   onSelectApp,
   onToggleDiagnostics,
-  onAddApplication,
   isPlayingMedia,
-  mode = "auto",
 }: {
   activeAppId: string | null;
   onSelectApp: (appId: string) => void;
   onToggleDiagnostics: () => void;
-  onAddApplication?: () => void;
   isPlayingMedia?: boolean;
-  mode?: "auto" | "collapsed" | "expanded";
 }) {
-  const [isHovered, setIsHovered] = useState(false);
+  const [hoveredApp, setHoveredApp] = useState<{ id: string; label: string; top: number } | null>(null);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const isExpanded = mode === "expanded" || (mode === "auto" && isHovered);
+  const handleAppMouseEnter = (appItem: SidebarApp, event: React.MouseEvent<HTMLButtonElement>) => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+    const rect = event.currentTarget.getBoundingClientRect();
+    setHoveredApp({
+      id: appItem.id,
+      label: appItem.label,
+      top: rect.top,
+    });
+  };
 
-  const handleMouseEnter = () => {
-    if (mode === "auto") {
-      setIsHovered(true);
-      animateContentInsets(SIDEBAR_WIDTH, 220, 280);
+  const handleAppMouseLeave = () => {
+    closeTimeoutRef.current = setTimeout(() => {
+      setHoveredApp(null);
+    }, 180);
+  };
+
+  const handleFlyoutMouseEnter = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
     }
   };
 
-  const handleMouseLeave = () => {
-    if (mode === "auto") {
-      setIsHovered(false);
-      animateContentInsets(220, SIDEBAR_WIDTH, 280);
-    }
+  const handleFlyoutMouseLeave = () => {
+    closeTimeoutRef.current = setTimeout(() => {
+      setHoveredApp(null);
+    }, 180);
+  };
+
+  const handleSelectAndClose = (appId: string) => {
+    setHoveredApp(null);
+    onSelectApp(appId);
   };
 
   return (
-    <aside
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      style={{
-        width: isExpanded ? 220 : SIDEBAR_WIDTH,
-        height: "100%",
-        background: "rgba(255, 255, 255, 0.98)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        borderRight: "1px solid #e2e8f0",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        paddingTop: 12,
-        boxSizing: "border-box",
-        transition: "width 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease",
-        boxShadow: isExpanded ? "6px 0 24px rgba(0, 0, 0, 0.07)" : "none",
-        zIndex: 50,
-        overflow: "hidden",
-        position: "relative",
-        willChange: "width",
-      }}
-    >
-      {/* Application List */}
-      <div
+    <>
+      <aside
         style={{
+          width: SIDEBAR_WIDTH,
+          height: "100%",
+          background: "rgba(255, 255, 255, 0.98)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          borderRight: "1px solid #e2e8f0",
           display: "flex",
           flexDirection: "column",
-          gap: 6,
-          width: "100%",
-          padding: "0 8px",
+          alignItems: "center",
+          paddingTop: 12,
           boxSizing: "border-box",
+          zIndex: 50,
+          userSelect: "none",
+          position: "relative",
         }}
       >
-        {APPS.map((appItem, index) => {
-          const isActive = activeAppId === appItem.id;
-          return (
-            <button
-              key={appItem.id}
-              title={appItem.label}
-              onClick={() => onSelectApp(appItem.id)}
-              style={{
-                height: 40,
-                width: "100%",
-                borderRadius: 8,
-                border: "none",
-                background: isActive ? "#e2e8f0" : "transparent",
-                color: isActive ? "#0f172a" : "#475569",
-                display: "flex",
-                alignItems: "center",
-                padding: "0 8px",
-                gap: 12,
-                cursor: "pointer",
-                position: "relative",
-                transition: "background 0.15s ease, color 0.15s ease, transform 0.15s ease",
-                userSelect: "none",
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.background = "#f1f5f9";
-                  e.currentTarget.style.transform = "translateX(2px)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.background = "transparent";
-                  e.currentTarget.style.transform = "translateX(0)";
-                }
-              }}
-            >
-              {/* Active Indicator Bar */}
-              {isActive && (
-                <div
-                  style={{
-                    position: "absolute",
-                    left: 2,
-                    top: 8,
-                    bottom: 8,
-                    width: 3,
-                    borderRadius: 2,
-                    backgroundColor: "#6366f1",
-                    boxShadow: "0 0 8px rgba(99, 102, 241, 0.6)",
-                    transition: "all 0.2s ease",
-                  }}
-                />
-              )}
-
-              {/* App Icon */}
-              <div
+        {/* Application List */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            width: "100%",
+            padding: "0 8px",
+            boxSizing: "border-box",
+          }}
+        >
+          {APPS.map((appItem) => {
+            const isActive = activeAppId === appItem.id;
+            const isHovered = hoveredApp?.id === appItem.id;
+            return (
+              <button
+                key={appItem.id}
+                title={appItem.label}
+                onClick={() => handleSelectAndClose(appItem.id)}
+                onMouseEnter={(e) => handleAppMouseEnter(appItem, e)}
+                onMouseLeave={handleAppMouseLeave}
                 style={{
-                  width: 24,
-                  height: 24,
+                  height: 40,
+                  width: "100%",
+                  borderRadius: 10,
+                  border: "none",
+                  background: isActive ? "#e2e8f0" : isHovered ? "#f1f5f9" : "transparent",
+                  color: isActive ? "#0f172a" : "#475569",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  flexShrink: 0,
-                  color: isActive ? "#0f172a" : "#64748b",
-                  transition: "transform 0.2s ease",
+                  padding: 0,
+                  cursor: "pointer",
+                  position: "relative",
+                  transition: "all 0.15s ease",
+                  userSelect: "none",
                 }}
               >
-                {appItem.glyph}
-              </div>
+                {/* Active Indicator Bar */}
+                {isActive && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: 2,
+                      top: 10,
+                      bottom: 10,
+                      width: 3,
+                      borderRadius: 2,
+                      backgroundColor: "#6366f1",
+                      boxShadow: "0 0 8px rgba(99, 102, 241, 0.6)",
+                    }}
+                  />
+                )}
 
-              {/* Expanded App Name & Metadata */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  flex: 1,
-                  opacity: isExpanded ? 1 : 0,
-                  transform: isExpanded ? "translateX(0)" : "translateX(-12px)",
-                  transition: "opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1) 0.04s, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1) 0.04s",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  pointerEvents: isExpanded ? "auto" : "none",
-                }}
-              >
-                <span style={{ fontSize: 13, fontWeight: isActive ? 600 : 500 }}>
-                  {appItem.label}
-                </span>
-                <span
+                {/* App Icon */}
+                <div
                   style={{
-                    fontSize: 10,
-                    padding: "2px 6px",
-                    borderRadius: 4,
-                    background: "#f1f5f9",
-                    color: "#64748b",
-                    fontFamily: "ui-monospace, monospace",
-                    fontWeight: 600,
+                    width: 24,
+                    height: 24,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: isActive ? "#0f172a" : "#64748b",
+                    transform: isHovered ? "scale(1.1)" : "scale(1)",
+                    transition: "transform 0.15s ease",
                   }}
                 >
-                  {index + 1}
-                </span>
-              </div>
-            </button>
-          );
-        })}
+                  {appItem.glyph}
+                </div>
+              </button>
+            );
+          })}
+        </div>
 
-        {/* Add Application Button */}
-        {isExpanded && (
-          <button
-            onClick={() => onAddApplication?.()}
-            style={{
-              height: 36,
-              width: "100%",
-              borderRadius: 8,
-              border: "1px dashed #cbd5e1",
-              background: "transparent",
-              color: "#64748b",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              cursor: "pointer",
-              fontSize: 12,
-              marginTop: 4,
-              transition: "border-color 0.15s ease, color 0.15s ease, background 0.15s ease, transform 0.15s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "#94a3b8";
-              e.currentTarget.style.color = "#0f172a";
-              e.currentTarget.style.background = "#f8fafc";
-              e.currentTarget.style.transform = "translateX(2px)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "#cbd5e1";
-              e.currentTarget.style.color = "#64748b";
-              e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.transform = "translateX(0)";
-            }}
-          >
-            <span style={{ fontSize: 14 }}>+</span>
-            <span>Add Application</span>
-          </button>
-        )}
-      </div>
+        {/* Decoupled Status & Telemetry Dock at bottom */}
+        <StatusDock
+          expanded={false}
+          onToggleDiagnostics={onToggleDiagnostics}
+          isPlayingMedia={isPlayingMedia}
+        />
+      </aside>
 
-      {/* Decoupled Status & Telemetry Dock at bottom */}
-      <StatusDock
-        expanded={isExpanded}
-        onToggleDiagnostics={onToggleDiagnostics}
-        isPlayingMedia={isPlayingMedia}
-      />
-    </aside>
+      {/* Arch-style Context Popover Flyout */}
+      {hoveredApp && (
+        <AppFlyoutMenu
+          appId={hoveredApp.id}
+          label={hoveredApp.label}
+          top={hoveredApp.top}
+          open={true}
+          onMouseEnter={handleFlyoutMouseEnter}
+          onMouseLeave={handleFlyoutMouseLeave}
+          onSelectApp={handleSelectAndClose}
+          isPlayingMedia={isPlayingMedia}
+        />
+      )}
+    </>
   );
 }
 
