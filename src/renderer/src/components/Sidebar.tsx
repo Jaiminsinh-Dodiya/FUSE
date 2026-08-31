@@ -53,21 +53,23 @@ export function Sidebar({
       onMouseLeave={handleMouseLeave}
       style={{
         width: isExpanded ? 220 : SIDEBAR_WIDTH,
+        minWidth: isExpanded ? 220 : SIDEBAR_WIDTH,
         height: "100%",
         background: "rgba(255, 255, 255, 0.98)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
         borderRight: "1px solid #e2e8f0",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         paddingTop: 12,
         boxSizing: "border-box",
-        transition: "width 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease",
-        boxShadow: isExpanded ? "4px 0 20px rgba(0, 0, 0, 0.08)" : "none",
+        transition: "width 0.28s cubic-bezier(0.16, 1, 0.3, 1), min-width 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease",
+        boxShadow: isExpanded ? "6px 0 24px rgba(0, 0, 0, 0.07)" : "none",
         zIndex: 50,
         overflow: "hidden",
         position: "relative",
+        willChange: "width",
       }}
     >
       {/* Application List */}
@@ -101,14 +103,20 @@ export function Sidebar({
                 gap: 12,
                 cursor: "pointer",
                 position: "relative",
-                transition: "background 0.15s ease, color 0.15s ease",
+                transition: "background 0.15s ease, color 0.15s ease, transform 0.15s ease",
                 userSelect: "none",
               }}
               onMouseEnter={(e) => {
-                if (!isActive) e.currentTarget.style.background = "#f1f5f9";
+                if (!isActive) {
+                  e.currentTarget.style.background = "#f1f5f9";
+                  e.currentTarget.style.transform = "translateX(2px)";
+                }
               }}
               onMouseLeave={(e) => {
-                if (!isActive) e.currentTarget.style.background = "transparent";
+                if (!isActive) {
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.transform = "translateX(0)";
+                }
               }}
             >
               {/* Active Indicator Bar */}
@@ -122,7 +130,8 @@ export function Sidebar({
                     width: 3,
                     borderRadius: 2,
                     backgroundColor: "#6366f1",
-                    boxShadow: "0 0 6px rgba(99, 102, 241, 0.5)",
+                    boxShadow: "0 0 8px rgba(99, 102, 241, 0.6)",
+                    transition: "all 0.2s ease",
                   }}
                 />
               )}
@@ -137,6 +146,7 @@ export function Sidebar({
                   justifyContent: "center",
                   flexShrink: 0,
                   color: isActive ? "#0f172a" : "#64748b",
+                  transition: "transform 0.2s ease",
                 }}
               >
                 {appItem.glyph}
@@ -150,10 +160,11 @@ export function Sidebar({
                   justifyContent: "space-between",
                   flex: 1,
                   opacity: isExpanded ? 1 : 0,
-                  transform: isExpanded ? "translateX(0)" : "translateX(-8px)",
-                  transition: "opacity 0.18s ease, transform 0.18s ease",
+                  transform: isExpanded ? "translateX(0)" : "translateX(-12px)",
+                  transition: "opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1) 0.04s, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1) 0.04s",
                   whiteSpace: "nowrap",
                   overflow: "hidden",
+                  pointerEvents: isExpanded ? "auto" : "none",
                 }}
               >
                 <span style={{ fontSize: 13, fontWeight: isActive ? 600 : 500 }}>
@@ -195,17 +206,19 @@ export function Sidebar({
               cursor: "pointer",
               fontSize: 12,
               marginTop: 4,
-              transition: "border-color 0.15s ease, color 0.15s ease, background 0.15s ease",
+              transition: "border-color 0.15s ease, color 0.15s ease, background 0.15s ease, transform 0.15s ease",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.borderColor = "#94a3b8";
               e.currentTarget.style.color = "#0f172a";
               e.currentTarget.style.background = "#f8fafc";
+              e.currentTarget.style.transform = "translateX(2px)";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor = "#cbd5e1";
               e.currentTarget.style.color = "#64748b";
               e.currentTarget.style.background = "transparent";
+              e.currentTarget.style.transform = "translateX(0)";
             }}
           >
             <span style={{ fontSize: 14 }}>+</span>
