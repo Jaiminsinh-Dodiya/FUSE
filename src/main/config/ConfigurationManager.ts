@@ -7,6 +7,7 @@ export interface WindowBounds {
   height: number;
   x?: number;
   y?: number;
+  isMaximized?: boolean;
 }
 
 export interface FuseConfig {
@@ -18,7 +19,7 @@ export interface FuseConfig {
 
 const DEFAULT_CONFIG: FuseConfig = {
   schemaVersion: 0,
-  window: { width: 1280, height: 800 },
+  window: { width: 1280, height: 800, isMaximized: false },
   applications: [{ id: "github" }, { id: "youtube-music" }],
   activeApplication: "github",
 };

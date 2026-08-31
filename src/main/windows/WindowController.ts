@@ -1,4 +1,4 @@
-import { BrowserWindow, shell, type WebContentsView } from "electron";
+import { BrowserWindow, screen, shell, type WebContentsView } from "electron";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { TITLEBAR_HEIGHT, SIDEBAR_WIDTH } from "./chromeLayout";
@@ -30,11 +30,26 @@ export class WindowController {
       return this.window;
     }
 
+    let { width = 1280, height = 800, x, y, isMaximized } = initialBounds ?? {};
+
+    // Validate coordinates against connected displays to avoid spawning off-screen
+    if (typeof x === "number" && typeof y === "number") {
+      const displays = screen.getAllDisplays();
+      const onScreen = displays.some((d) => {
+        const { x: dx, y: dy, width: dw, height: dh } = d.bounds;
+        return x! >= dx && x! <= dx + dw - 100 && y! >= dy && y! <= dy + dh - 100;
+      });
+      if (!onScreen) {
+        x = undefined;
+        y = undefined;
+      }
+    }
+
     const win = new BrowserWindow({
-      width: initialBounds?.width ?? 1280,
-      height: initialBounds?.height ?? 800,
-      x: initialBounds?.x,
-      y: initialBounds?.y,
+      width,
+      height,
+      x,
+      y,
       minWidth: 960,
       minHeight: 600,
       show: false,
@@ -49,6 +64,9 @@ export class WindowController {
     });
 
     win.once("ready-to-show", () => {
+      if (isMaximized) {
+        win.maximize();
+      }
       win.show();
     });
 
@@ -81,15 +99,26 @@ export class WindowController {
     const scheduleBoundsSave = () => {
       if (saveTimer) clearTimeout(saveTimer);
       saveTimer = setTimeout(() => {
-        this.onBoundsChanged?.(win.getBounds());
+        if (!win.isDestroyed()) {
+          const max = win.isMaximized();
+          const bounds = (max && win.getNormalBounds) ? win.getNormalBounds() : win.getBounds();
+          this.onBoundsChanged?.({
+            width: bounds.width,
+            height: bounds.height,
+            x: bounds.x,
+            y: bounds.y,
+            isMaximized: max,
+          });
+        }
       }, 500);
     };
+
     win.on("resize", scheduleBoundsSave);
     win.on("move", scheduleBoundsSave);
+    win.on("maximize", scheduleBoundsSave);
+    win.on("unmaximize", scheduleBoundsSave);
 
-    // Single resize listener repositioning ALL attached app views,
-    // rather than one listener per attachApplicationView() call
-    // (that would have accumulated a duplicate listener per app).
+    // Single resize listener repositioning ALL attached app views
     win.on("resize", () => this.repositionViews());
 
     win.on("closed", () => {

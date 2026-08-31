@@ -221,8 +221,19 @@ app.on("window-all-closed", () => {
 
 app.on("before-quit", () => {
   const win = windowController.get();
-  if (win) {
-    configManager.setWindowBounds(win.getBounds());
+  if (win && !win.isDestroyed()) {
+    const isMaximized = win.isMaximized();
+    const bounds = (isMaximized && win.getNormalBounds) ? win.getNormalBounds() : win.getBounds();
+    configManager.setWindowBounds({
+      width: bounds.width,
+      height: bounds.height,
+      x: bounds.x,
+      y: bounds.y,
+      isMaximized,
+    });
+    if (activeAppId) {
+      configManager.setActiveApplication(activeAppId);
+    }
     configManager.save();
   }
 });
