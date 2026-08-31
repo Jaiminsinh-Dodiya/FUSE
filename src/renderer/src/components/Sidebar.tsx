@@ -33,23 +33,38 @@ export function Sidebar({
 
   const isExpanded = mode === "expanded" || (mode === "auto" && isHovered);
 
+  const handleMouseEnter = () => {
+    if (mode === "auto") {
+      setIsHovered(true);
+      void window.fuse.windowControls.setContentInsets({ left: 220 });
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (mode === "auto") {
+      setIsHovered(false);
+      void window.fuse.windowControls.setContentInsets({ left: SIDEBAR_WIDTH });
+    }
+  };
+
   return (
     <aside
-      onMouseEnter={() => mode === "auto" && setIsHovered(true)}
-      onMouseLeave={() => mode === "auto" && setIsHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       style={{
         width: isExpanded ? 220 : SIDEBAR_WIDTH,
         height: "100%",
-        background: "rgba(19, 22, 29, 0.95)",
+        background: "rgba(255, 255, 255, 0.98)",
         backdropFilter: "blur(16px)",
-        borderRight: "1px solid rgba(255, 255, 255, 0.08)",
+        WebkitBackdropFilter: "blur(16px)",
+        borderRight: "1px solid #e2e8f0",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         paddingTop: 12,
         boxSizing: "border-box",
-        transition: "width 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease",
-        boxShadow: isExpanded ? "4px 0 24px rgba(0, 0, 0, 0.45)" : "none",
+        transition: "width 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease",
+        boxShadow: isExpanded ? "4px 0 20px rgba(0, 0, 0, 0.08)" : "none",
         zIndex: 50,
         overflow: "hidden",
         position: "relative",
@@ -78,8 +93,8 @@ export function Sidebar({
                 width: "100%",
                 borderRadius: 8,
                 border: "none",
-                background: isActive ? "rgba(255, 255, 255, 0.12)" : "transparent",
-                color: isActive ? "#ffffff" : "#c4cdd8",
+                background: isActive ? "#e2e8f0" : "transparent",
+                color: isActive ? "#0f172a" : "#475569",
                 display: "flex",
                 alignItems: "center",
                 padding: "0 8px",
@@ -90,7 +105,7 @@ export function Sidebar({
                 userSelect: "none",
               }}
               onMouseEnter={(e) => {
-                if (!isActive) e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+                if (!isActive) e.currentTarget.style.background = "#f1f5f9";
               }}
               onMouseLeave={(e) => {
                 if (!isActive) e.currentTarget.style.background = "transparent";
@@ -107,7 +122,7 @@ export function Sidebar({
                     width: 3,
                     borderRadius: 2,
                     backgroundColor: "#6366f1",
-                    boxShadow: "0 0 8px #6366f1",
+                    boxShadow: "0 0 6px rgba(99, 102, 241, 0.5)",
                   }}
                 />
               )}
@@ -121,6 +136,7 @@ export function Sidebar({
                   alignItems: "center",
                   justifyContent: "center",
                   flexShrink: 0,
+                  color: isActive ? "#0f172a" : "#64748b",
                 }}
               >
                 {appItem.glyph}
@@ -135,7 +151,7 @@ export function Sidebar({
                   flex: 1,
                   opacity: isExpanded ? 1 : 0,
                   transform: isExpanded ? "translateX(0)" : "translateX(-8px)",
-                  transition: "opacity 0.2s ease, transform 0.2s ease",
+                  transition: "opacity 0.18s ease, transform 0.18s ease",
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                 }}
@@ -148,9 +164,10 @@ export function Sidebar({
                     fontSize: 10,
                     padding: "2px 6px",
                     borderRadius: 4,
-                    background: "rgba(255, 255, 255, 0.06)",
-                    color: "#8c9ba8",
+                    background: "#f1f5f9",
+                    color: "#64748b",
                     fontFamily: "ui-monospace, monospace",
+                    fontWeight: 600,
                   }}
                 >
                   {index + 1}
@@ -168,9 +185,9 @@ export function Sidebar({
               height: 36,
               width: "100%",
               borderRadius: 8,
-              border: "1px dashed rgba(255, 255, 255, 0.15)",
+              border: "1px dashed #cbd5e1",
               background: "transparent",
-              color: "#8c9ba8",
+              color: "#64748b",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -181,13 +198,13 @@ export function Sidebar({
               transition: "border-color 0.15s ease, color 0.15s ease, background 0.15s ease",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.35)";
-              e.currentTarget.style.color = "#ffffff";
-              e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)";
+              e.currentTarget.style.borderColor = "#94a3b8";
+              e.currentTarget.style.color = "#0f172a";
+              e.currentTarget.style.background = "#f8fafc";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.15)";
-              e.currentTarget.style.color = "#8c9ba8";
+              e.currentTarget.style.borderColor = "#cbd5e1";
+              e.currentTarget.style.color = "#64748b";
               e.currentTarget.style.background = "transparent";
             }}
           >
