@@ -185,6 +185,9 @@ handleFromShell("app:getState", (_event, appId: string) => {
 handleFromShell("applications:getCapabilities", (_event, appId: string) => {
   return appRegistry.get(appId)?.definition.capabilities ?? null;
 });
+handleFromShell("window:setContentInsets", (_event, insets: any) => {
+  windowController.setContentInsets(insets);
+});
 handleFromShell("applications:switch", (_event, appId: string) => {
   switchApplication(appId);
 });

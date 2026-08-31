@@ -6,9 +6,22 @@ import type { WindowBounds } from "../config/ConfigurationManager";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
+export interface ContentInsets {
+  top: number;
+  left: number;
+  right: number;
+  bottom: number;
+}
+
 export class WindowController {
   private window: BrowserWindow | null = null;
   private appViews: WebContentsView[] = [];
+  private contentInsets: ContentInsets = {
+    top: TITLEBAR_HEIGHT,
+    left: SIDEBAR_WIDTH,
+    right: 0,
+    bottom: 0,
+  };
 
   onBoundsChanged: ((bounds: WindowBounds) => void) | null = null;
 
@@ -106,16 +119,28 @@ export class WindowController {
     this.appViews = this.appViews.filter((v) => v !== view);
   }
 
+  setContentInsets(insets: Partial<ContentInsets>): void {
+    this.contentInsets = {
+      ...this.contentInsets,
+      ...insets,
+    };
+    this.repositionViews();
+  }
 
   private repositionViews(): void {
     if (!this.window) return;
     const b = this.window.getContentBounds();
+    const x = this.contentInsets.left;
+    const y = this.contentInsets.top;
+    const width = Math.max(0, b.width - this.contentInsets.left - this.contentInsets.right);
+    const height = Math.max(0, b.height - this.contentInsets.top - this.contentInsets.bottom);
+
     for (const view of this.appViews) {
       view.setBounds({
-        x: SIDEBAR_WIDTH,
-        y: TITLEBAR_HEIGHT,
-        width: b.width - SIDEBAR_WIDTH,
-        height: b.height - TITLEBAR_HEIGHT,
+        x,
+        y,
+        width,
+        height,
       });
     }
   }

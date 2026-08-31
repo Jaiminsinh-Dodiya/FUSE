@@ -11,6 +11,8 @@ const fuseApi = {
     maximize: () => ipcRenderer.invoke("window:maximize"),
     close: () => ipcRenderer.invoke("window:close"),
     isMaximized: () => ipcRenderer.invoke("window:isMaximized"),
+    setContentInsets: (insets: { top?: number; left?: number; right?: number; bottom?: number }) =>
+      ipcRenderer.invoke("window:setContentInsets", insets),
   },
   applications: {
     reload: (appId: string) => ipcRenderer.invoke(`app:reload:${appId}`),
