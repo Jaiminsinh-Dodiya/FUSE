@@ -1,8 +1,25 @@
+export interface MediaCapability {
+  readonly backgroundAudio?: boolean;
+  readonly mediaKeys?: boolean;
+}
+
+export interface DownloadsCapability {
+  readonly enabled?: boolean;
+  readonly defaultFolder?: "downloads" | "ask";
+}
+
+export interface AppCapabilities {
+  readonly media?: MediaCapability;
+  readonly downloads?: DownloadsCapability;
+  readonly notifications?: boolean;
+  readonly clipboard?: boolean;
+  readonly externalLinks?: boolean;
+}
+
 /**
- * The v0.0 application definition. Deliberately small — this is not
- * the future declarative .unified format. Do not add capability
- * fields here until a second real application (YouTube Music) needs
- * them. See docs/architecture, section 9.
+ * The FUSE application definition. Foundation for the future declarative
+ * .unified format. Encapsulates identity, navigation entry, and declared
+ * capabilities.
  */
 export interface AppDefinition {
   /** Stable identifier, e.g. "github". Used as session partition suffix. */
@@ -15,4 +32,6 @@ export interface AppDefinition {
   readonly icon?: string;
   /** Optional grouping category, e.g. "development". */
   readonly category?: string;
+  /** Declared capabilities for this application (Phase 7). */
+  readonly capabilities?: AppCapabilities;
 }
